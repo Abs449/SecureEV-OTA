@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.benchmarks/
+.venv/
+env/
+venv/
+ENV/
+
+# Logs and outputs
+*.log
+test_output.txt
+test_security_output.txt
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,78 @@
+# SecureEV-OTA Requirements
+# Enhanced ECC-based OTA Security Framework for Electric Vehicles
+
+# ============================================
+# Core Cryptography
+# ============================================
+cryptography>=41.0.0        # Core ECC operations (ECDSA, ECDH)
+ecdsa>=0.18.0               # Pure Python ECC (for lightweight operations)
+pynacl>=1.5.0               # Libsodium bindings (Curve25519)
+
+# ============================================
+# Post-Quantum Cryptography (Optional)
+# ============================================
+# Uncomment when ready for PQC:
+# oqs>=0.8.0                # Open Quantum Safe - ML-DSA, ML-KEM
+# pqcrypto>=0.1.0           # Alternative PQC implementation
+
+# ============================================
+# Web Framework (Server Components)
+# ============================================
+fastapi>=0.100.0            # REST API framework
+uvicorn>=0.23.0             # ASGI server
+python-multipart>=0.0.6     # File upload support
+
+# ============================================
+# Database
+# ============================================
+sqlalchemy>=2.0.0           # ORM for metadata storage
+alembic>=1.11.0             # Database migrations
+
+# ============================================
+# Messaging
+# ============================================
+paho-mqtt>=1.6.0            # MQTT client for update notifications
+
+# ============================================
+# Security & Authentication
+# ============================================
+python-jose[cryptography]>=3.3.0  # JWT tokens
+passlib>=1.7.4              # Password hashing
+
+# ============================================
+# Data Handling
+# ============================================
+pydantic>=2.0.0             # Data validation
+httpx>=0.24.0               # Async HTTP client (for server communication)
+python-dateutil>=2.8.0      # Date handling
+
+# ============================================
+# Testing
+# ============================================
+pytest>=7.4.0               # Test framework
+pytest-asyncio>=0.21.0      # Async test support
+pytest-cov>=4.1.0           # Coverage reporting
+hypothesis>=6.80.0          # Property-based testing
+pytest-benchmark>=4.0.0     # Performance benchmarks
+
+# ============================================
+# Development Tools
+# ============================================
+black>=23.7.0               # Code formatting
+mypy>=1.4.0                 # Type checking
+ruff>=0.0.280               # Fast linting
+isort>=5.12.0               # Import sorting
+
+# ============================================
+# Documentation
+# ============================================
+sphinx>=7.0.0               # Documentation generator
+mkdocs>=1.5.0               # Alternative docs
+mkdocs-material>=9.0.0      # Material theme
+
+# ============================================
+# Utilities
+# ============================================
+click>=8.1.0                # CLI framework
+rich>=13.4.0                # Rich terminal output
+tqdm>=4.65.0                # Progress bars
