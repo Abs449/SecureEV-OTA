@@ -138,7 +138,7 @@ SecureEV-OTA/
 ## 📜 Roadmap
 
 -   [x] **Phase 1**: Cryptographic Foundation (ECC, Hybrid PQC, Batch verify)
--   [ ] **Phase 2**: Security Layer (E2E Encryption, DoS Protection)
+-   [x] **Phase 2**: Security Layer (E2E Encryption, DoS Protection)
 -   [ ] **Phase 3**: Protocol Implementation (Uptane Metadata & Flows)
 -   [ ] **Phase 4**: Backend Services (Director & Image Repositories)
 -   [ ] **Phase 5**: Vehicle Client (Update Manager & ECU Simulation)

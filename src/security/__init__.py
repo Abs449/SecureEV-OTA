@@ -1,55 +1,13 @@
-"""SecureEV-OTA Security Module"""
+"""
+SecureEV-OTA: Security Module
 
-from .e2e_encryption import (
-    E2EEncryption,
-    EncryptedPackage,
-    SessionKey,
-    EncryptionMode,
-    EncryptionError,
-    DecryptionError,
-    KeyExchangeError,
-)
+This module implements high-level security features including:
+- End-to-End Encryption (E2E)
+- Denial-of-Service (DoS) Protection
+- Formal protocol verification (models separately)
+"""
 
-from .dos_protection import (
-    DoSProtection,
-    AdaptiveRateLimiter,
-    ProgressiveTimeoutManager,
-    MultiPathDelivery,
-    UpdateRequest,
-    UpdatePriority,
-    RequestStatus,
-    RateLimitConfig,
-    TimeoutConfig,
-    EndpointConfig,
-    RateLimitExceeded,
-    TimeoutExceeded,
-    AllEndpointsFailed,
-)
+from src.security.encryption import E2EEncryption
+from src.security.dos_protection import DoSProtection, TokenBucket
 
-__all__ = [
-    # E2E Encryption
-    'E2EEncryption',
-    'EncryptedPackage',
-    'SessionKey',
-    'EncryptionMode',
-    'EncryptionError',
-    'DecryptionError',
-    'KeyExchangeError',
-    
-    # DoS Protection
-    'DoSProtection',
-    'AdaptiveRateLimiter',
-    'ProgressiveTimeoutManager',
-    'MultiPathDelivery',
-    'UpdateRequest',
-    'UpdatePriority',
-    'RequestStatus',
-    'RateLimitConfig',
-    'TimeoutConfig',
-    'EndpointConfig',
-    'RateLimitExceeded',
-    'TimeoutExceeded',
-    'AllEndpointsFailed',
-]
-
-__version__ = "0.1.0"
+__all__ = ["E2EEncryption", "DoSProtection", "TokenBucket"]
