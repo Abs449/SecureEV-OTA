@@ -1,7 +1,7 @@
 # Development Plan: SecureEV-OTA
 
-> **Current Status**: Phase 2 (Security Layer) is **COMPLETE**.
-> **Next Objective**: Begin Phase 3 (Protocol Implementation).
+> **Current Status**: Phase 3 (Protocol Implementation) is **COMPLETE**.
+> **Next Objective**: Begin Phase 4 (Backend Services).
 
 This document outlines the step-by-step implementation plan for continuing development of the SecureEV-OTA framework. It translates the high-level roadmap into actionable engineering tasks.
 
@@ -13,8 +13,8 @@ This document outlines the step-by-step implementation plan for continuing devel
 | :--- | :--- | :--- | :--- |
 | **Phase 1** | **Crypto Foundation** | Week 1-2 | ✅ **DONE** |
 | **Phase 2** | **Security Layer** | Week 3-4 | ✅ **DONE** |
-| **Phase 3** | **Protocol Implementation** | Week 5-6 | ⏩ **NEXT** |
-| **Phase 4** | **Backend Services** | Week 7-8 | 📅 Planned |
+| **Phase 3** | **Protocol Implementation** | Week 5-6 | ✅ **DONE** |
+| **Phase 4** | **Backend Services** | Week 7-8 | ⏩ **NEXT** |
 | **Phase 5** | **Vehicle Client** | Week 9-10 | 📅 Planned |
 | **Phase 6** | **Simulation & Polish** | Week 11-12 | 📅 Planned |
 
