@@ -141,7 +141,7 @@ SecureEV-OTA/
 -   [x] **Phase 2**: Security Layer (E2E Encryption, DoS Protection)
 -   [x] **Phase 3**: Protocol Implementation (Uptane Metadata & Flows)
 -   [x] **Phase 4**: Backend Services (Director & Image Repositories)
--   [ ] **Phase 5**: Vehicle Client (Update Manager & ECU Simulation)
+-   [x] **Phase 5**: Vehicle Client (Update Manager & ECU Simulation)
 -   [ ] **Phase 6**: Web Dashboard & Final Polish
 
 ---
