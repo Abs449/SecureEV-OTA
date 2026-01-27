@@ -142,7 +142,7 @@ SecureEV-OTA/
 -   [x] **Phase 3**: Protocol Implementation (Uptane Metadata & Flows)
 -   [x] **Phase 4**: Backend Services (Director & Image Repositories)
 -   [x] **Phase 5**: Vehicle Client (Update Manager & ECU Simulation)
--   [ ] **Phase 6**: Web Dashboard & Final Polish
+-   [x] **Phase 6**: Web Dashboard & Final Polish
 
 ---
 

@@ -66,6 +66,15 @@ def build_dos_response():
     )
 
 
+@app.get("/public_key")
+async def get_public_key():
+    """
+    [DEMO ONLY] Expose public key so clients can bootstrap trust.
+    In production, this would be baked into the firmware.
+    """
+    return {"public_key": director_key.get_public_key_bytes().hex()}
+
+
 @app.post("/register")
 async def register_vehicle(registration: VehicleRegistration):
     """
