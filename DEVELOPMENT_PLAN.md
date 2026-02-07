@@ -12,11 +12,11 @@ This document outlines the step-by-step implementation plan for continuing devel
 | Phase | Focus | Estimated Duration | Status |
 | :--- | :--- | :--- | :--- |
 | **Phase 1** | **Crypto Foundation** | Week 1-2 | ✅ **DONE** |
-| **Phase 2** | **Security Layer** | Week 3-4 | ✅ **DONE** |
-| **Phase 3** | **Protocol Implementation** | Week 5-6 | ✅ **DONE** |
-| **Phase 4** | **Backend Services** | Week 7-8 | ✅ **DONE** |
-| **Phase 5** | **Vehicle Client** | Week 9-10 | ✅ **DONE** |
-| **Phase 6** | **Simulation & Polish** | Week 11-12 | ⏩ **NEXT** |
+| **Phase 2** | **Security Layer** | Week 3-4 | ⏩ **NEXT** |
+| **Phase 3** | **Protocol Implementation** | Week 5-6 | 📅 Planned |
+| **Phase 4** | **Backend Services** | Week 7-8 | 📅 Planned |
+| **Phase 5** | **Vehicle Client** | Week 9-10 | 📅 Planned |
+| **Phase 6** | **Simulation & Polish** | Week 11-12 | 📅 Planned |
 
 ---
 

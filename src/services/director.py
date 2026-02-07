@@ -112,3 +112,11 @@ async def check_updates(vehicle_id: str):
 @app.get("/")
 async def root():
     return {"service": "SecureEV-OTA Director", "status": "online"}
+
+@app.get("/key")
+async def get_public_key():
+    """
+    Debug endpoint to get the ephemeral Director public key.
+    In production, this key would be pre-shared or Certificate Authority signed.
+    """
+    return {"public_key": director_key.get_public_key_bytes().hex()}
