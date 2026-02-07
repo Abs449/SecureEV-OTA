@@ -1,0 +1,54 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.11, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\cabhi\OneDrive\Desktop\coding\SecureEV-OTA
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2 items
+
+tests\test_client.py EE                                                  [100%]
+
+=================================== ERRORS ====================================
+________________ ERROR at setup of test_successful_update_flow ________________
+
+    @pytest.fixture
+    def ecu():
+        """Create an ECU instance with mocked trust anchors."""
+        # We need a real public key to pass validation
+        from src.crypto.ecc_core import ECCCore
+        ecc = ECCCore()
+        kp = ecc.generate_keypair()
+        pub_hex = kp.get_public_key_bytes().hex()
+    
+>       return PrimaryECU(
+            vehicle_id="v-test",
+            director_url=MOCK_DIRECTOR_URL,
+            unknown_image_repo_url=MOCK_REPO_URL,
+            director_public_key_hex=pub_hex
+        )
+E       TypeError: PrimaryECU.__init__() got an unexpected keyword argument 'unknown_image_repo_url'
+
+tests\test_client.py:26: TypeError
+________ ERROR at setup of test_update_tampered_payload_hash_mismatch _________
+
+    @pytest.fixture
+    def ecu():
+        """Create an ECU instance with mocked trust anchors."""
+        # We need a real public key to pass validation
+        from src.crypto.ecc_core import ECCCore
+        ecc = ECCCore()
+        kp = ecc.generate_keypair()
+        pub_hex = kp.get_public_key_bytes().hex()
+    
+>       return PrimaryECU(
+            vehicle_id="v-test",
+            director_url=MOCK_DIRECTOR_URL,
+            unknown_image_repo_url=MOCK_REPO_URL,
+            director_public_key_hex=pub_hex
+        )
+E       TypeError: PrimaryECU.__init__() got an unexpected keyword argument 'unknown_image_repo_url'
+
+tests\test_client.py:26: TypeError
+=========================== short test summary info ===========================
+ERROR tests/test_client.py::test_successful_update_flow - TypeError: PrimaryE...
+ERROR tests/test_client.py::test_update_tampered_payload_hash_mismatch - Type...
+============================== 2 errors in 0.40s ==============================

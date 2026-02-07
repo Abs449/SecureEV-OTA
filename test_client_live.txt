@@ -1,0 +1,74 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.11, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\cabhi\OneDrive\Desktop\coding\SecureEV-OTA
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2 items
+
+tests\test_client.py EE                                                  [100%]
+
+=================================== ERRORS ====================================
+_____________ ERROR at setup of test_live_successful_update_flow ______________
+
+self = <Coroutine test_live_successful_update_flow>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\pytest_asyncio\plugin.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+fixturedef = <FixtureDef argname='director_public_key' scope='function' baseid='tests/test_client.py'>
+request = <SubRequest 'director_public_key' for <Coroutine test_live_successful_update_flow>>
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_fixture_setup(fixturedef: FixtureDef, request) -> object | None:
+        asyncio_mode = _get_asyncio_mode(request.config)
+        if not _is_asyncio_fixture_function(fixturedef.func):
+            if asyncio_mode == Mode.STRICT:
+                # Ignore async fixtures without explicit asyncio mark in strict mode
+                # This applies to pytest_trio fixtures, for example
+>               return (yield)
+                        ^^^^^
+E               pytest.PytestRemovedIn9Warning: 'test_live_successful_update_flow' requested an async fixture 'director_public_key', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E               See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\pytest_asyncio\plugin.py:728: PytestRemovedIn9Warning
+_________ ERROR at setup of test_live_tampered_payload_hash_mismatch __________
+
+self = <Coroutine test_live_tampered_payload_hash_mismatch>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\pytest_asyncio\plugin.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+fixturedef = <FixtureDef argname='director_public_key' scope='function' baseid='tests/test_client.py'>
+request = <SubRequest 'director_public_key' for <Coroutine test_live_tampered_payload_hash_mismatch>>
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_fixture_setup(fixturedef: FixtureDef, request) -> object | None:
+        asyncio_mode = _get_asyncio_mode(request.config)
+        if not _is_asyncio_fixture_function(fixturedef.func):
+            if asyncio_mode == Mode.STRICT:
+                # Ignore async fixtures without explicit asyncio mark in strict mode
+                # This applies to pytest_trio fixtures, for example
+>               return (yield)
+                        ^^^^^
+E               pytest.PytestRemovedIn9Warning: 'test_live_tampered_payload_hash_mismatch' requested an async fixture 'director_public_key', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E               See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\pytest_asyncio\plugin.py:728: PytestRemovedIn9Warning
+=========================== short test summary info ===========================
+ERROR tests/test_client.py::test_live_successful_update_flow - pytest.PytestR...
+ERROR tests/test_client.py::test_live_tampered_payload_hash_mismatch - pytest...
+============================== 2 errors in 0.44s ==============================

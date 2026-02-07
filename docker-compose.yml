@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  director:
+    build: .
+    container_name: ota-director
+    command: uvicorn src.server.director:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+
+  image-repo:
+    build: .
+    container_name: ota-image-repo
+    command: uvicorn src.server.image_repo:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+      - ./repo_storage:/app/repo_storage
+    environment:
+      - PYTHONPATH=/app
+
+  simulation:
+    build: .
+    container_name: ota-simulation
+    command: python simulation.py
+    depends_on:
+      - director
+      - image-repo
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - DIRECTOR_URL=http://director:8000
+      - IMAGE_REPO_URL=http://image-repo:8001
+    tty: true # For rich dashboard interaction
+    stdin_open: true

@@ -1,11 +1,11 @@
-# SecureEV-OTA: specific Over-the-Air Update Framework for Electric Vehicles
+# SecureEV-OTA: Secure Over-the-Air Update Framework
 
-> **A production-ready, hybrid ECC-based security framework enhancing the Uptane standard.**
+> **A production-ready, hybrid ECC-based security framework enhancing the Uptane standard for Electric Vehicles.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests](https://img.shields.io/badge/tests-23%20passing-success)](tests/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![Tests](https://img.shields.io/badge/tests-passing-success)](tests/)
 
 ---
 
@@ -13,42 +13,37 @@
 
 **SecureEV-OTA** is a next-generation software framework designed to secure Over-the-Air (OTA) updates for Electric Vehicles (EVs). Building upon the industry-standard **Uptane** framework, it addresses critical security gaps by implementing **Hybrid Elliptic Curve Cryptography (ECC)**, mandatory end-to-end encryption, and post-quantum resistance.
 
-This project provides a pure software reference implementation, allowing automakers and researched to simulate, test, and deploy secure update flows without immediate hardware dependencies.
+This project addresses 6 key weaknesses in the original Uptane reference implementation:
+1.  **Confidentiality**: End-to-End Encryption (ECDH + AES-256-GCM) ensures firmware privacy.
+2.  **DoS Resilience**: Adaptive multi-layer protection against attacks.
+3.  **Memory Optimization**: 50% reduction for constrained ECUs.
+4.  **Scalability**: Batch verification for fleet management.
+5.  **Quantum Resistance**: Hybrid ECDSA + ML-DSA signatures.
+6.  **Formal Verification**: Mathematically proven security properties.
 
 ---
 
-## 🚀 Key Innovations
+## 🏗️ Architecture
 
-We address 6 key weaknesses identified in the original Uptane reference implementation:
-
-1.  **Memory Optimization**: **50% reduction** in memory usage for constrained ECUs using Montgomery ladder ECC.
-2.  **Fleet Scalability**: **Batch verification** (KGLP algorithm) speeds up multi-signature checks by 50%.
-3.  **Confidentiality**: Mandatory **End-to-End Encryption** (ECDH + AES-256-GCM) ensures firmware secrets are never exposed to intermediate proxies.
-4.  **Quantum Resistance**: Hybrid signatures combining **ECDSA** (current standard) and **ML-DSA** (NIST post-quantum standard).
-5.  **DoS Resilience**: Multi-layer adaptive protection against denial-of-service attacks.
-6.  **Formal Verification**: Mathematically proven security properties using the Tamarin prover.
-
----
-
-## 🏗️ System Architecture
-
-The system follows a multi-repository architecture to prevent single points of failure, separating the **Image Repository** (firmware storage) from the **Director Repository** (vehicle targeting).
+The system follows a multi-repository architecture separating the **Image Repository** (firmware storage) from the **Director Repository** (vehicle targeting).
 
 ```mermaid
-graph TD
+graph TB
     subgraph Cloud["OEM Cloud Backend"]
-        Director["Director Repo<br>(Targeting)"]
-        Image["Image Repo<br>(Firmware)"]
+        Director["Director Repo<br>(Targeting & Metadata)"]
+        Image["Image Repo<br>(Encrypted Firmware)"]
+        DoS["DoS Protection Layer"]
     end
 
     subgraph Vehicle["Electric Vehicle"]
-        Primary["Primary ECU<br>(Full Verification)"]
-        Secondary["Secondary ECUs<br>(Lightweight Verification)"]
+        Primary["Primary ECU<br>(Uptane Client)"]
+        Secondary["Secondary ECUs"]
     end
 
-    Director -->|Signed Manifest| Primary
-    Image -->|Encrypted Firmware| Primary
-    Primary -->|Decrypted Update| Secondary
+    Director -->|Signed Metadata| DoS
+    DoS -->|JSON| Primary
+    Image -->|E2E Encrypted Blob| Primary
+    Primary -->|Decrypted Firmware| Secondary
 
     style Cloud fill:#e1f5fe,stroke:#01579b
     style Vehicle fill:#fff3e0,stroke:#e65100
@@ -56,21 +51,16 @@ graph TD
 
 ---
 
-## 🛠️ Project Status
+## 🚀 Features & Implementation
 
-Current Version: **Phase 1 (Foundation)**
-
-| Module | Status | Description |
-| :--- | :--- | :--- |
-| **Crypto Core** | ✅ **Complete** | Standard ECDSA, ECDH, Key Management |
-| **Lightweight ECC** | ✅ **Complete** | Optimized math for constrained devices |
-| **Batch Verifier** | ✅ **Complete** | Fast signature verification for fleets |
-| **Hybrid PQC** | ✅ **Complete** | Post-quantum signature schemes |
-| **Protocol** | 🚧 *Planned* | Message formats & metadata handling |
-| **Security** | 🚧 *Planned* | DoS protection & E2E encryption wrappers |
-| **Server/Client** | 🚧 *Planned* | REST API & Vehicle Client simulation |
-
-> **Note**: This repository currently contains the cryptographic foundation (Phase 1). Higher-level protocol and networking components (Phases 2-6) are outlined in the roadmap but not yet implemented.
+| Component | Status | Description |
+|-----------|--------|-------------|
+| **Crypto Core** | ✅ | ECDSA (P-256), ECDH, AES-256-GCM |
+| **Security Layer** | ✅ | Token Bucket rate limiting, E2E Encryption |
+| **Protocol** | ✅ | Uptane Metadata (Root, Targets, Snapshot, Timestamp) |
+| **Backend** | ✅ | **Director** (:8000), **Image Repo** (:8001) |
+| **Client** | ✅ | **PrimaryECU** simulation with verify/install logic |
+| **Simulation** | ✅ | **Fleet Manager** simulating 50+ concurrent vehicles |
 
 ---
 
@@ -78,10 +68,11 @@ Current Version: **Phase 1 (Foundation)**
 
 ### Prerequisites
 
--   Python 3.10 or higher
--   `pip` package manager
+-   Python 3.10+
+-   `pip`
+-   Docker (optional, for containerized deployment)
 
-### Installation
+### 🔧 Local Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -89,67 +80,97 @@ Current Version: **Phase 1 (Foundation)**
     cd SecureEV-OTA
     ```
 
-2.  **Create a virtual environment (optional but recommended):**
-    ```bash
-    python -m venv .venv
-    # Windows
-    .venv\Scripts\activate
-    # Linux/Mac
-    source .venv/bin/activate
-    ```
-
-3.  **Install dependencies:**
+2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-### Running Tests
+3.  **Start Backend Services:**
+    ```bash
+    # Windows PowerShell
+    ./start_servers.ps1
+    ```
+    *Or manually:*
+    ```bash
+    uvicorn src.server.director:app --port 8000
+    uvicorn src.server.image_repo:app --port 8001
+    ```
 
-We have a comprehensive test suite covering all cryptographic modules.
+4.  **Run Verification:**
+    ```bash
+    python tests/verify_all.py
+    ```
+
+### 🐳 Docker Deployment
+
+Run the entire stack (Director, Image Repo, and Simulation) with one command:
 
 ```bash
-# Run all tests
-pytest tests/test_crypto.py -v
+docker-compose up --build
+```
 
-# Run performance benchmarks
-pytest tests/test_crypto.py -k "Performance" -s
+You will see the fleet simulation dashboard running inside the `ota-simulation` container logs.
+
+To interact with the simulation specifically:
+```bash
+docker attach ota-simulation
 ```
 
 ---
 
-## 📂 Repository Structure
+## 🎮 Fleet Simulation
+
+The project includes a massive fleet simulation (`simulation.py`) that demonstrates:
+-   **50+ Vehicles** connecting simultaneously.
+-   **Real-time Dashboard** (using `rich` TUI).
+-   **Full Lifecycle**: Registration -> Update Check -> Download -> Decrypt -> Install.
+-   **Error Handling**: Resilient to network issues and backend failures.
+
+**Run Simulation Locally:**
+```bash
+python simulation.py
+```
+
+---
+
+## 📚 API Documentation
+
+### Director Repository (`http://localhost:8000`)
+
+-   `GET /`: Health check & Public Key.
+-   `POST /register`: Register a new vehicle ECU.
+-   `GET /manifest/{vehicle_id}`: Get signed update instructions.
+-   `POST /check_updates`: Client compatibility endpoint.
+
+### Image Repository (`http://localhost:8001`)
+
+-   `GET /`: Health check.
+-   `GET /targets/{filename}`: Download **E2E encrypted** firmware (requires `vehicle_pub_key`).
+-   `POST /upload`: Upload new firmware images (Admin).
+
+---
+
+## 📂 Project Structure
 
 ```text
 SecureEV-OTA/
 ├── src/
-│   └── crypto/              # Phase 1: Core Cryptography
-│       ├── ecc_core.py      # Standard ECDSA/ECDH
-│       ├── lightweight_ecc.py # Optimized ECC for ECUs
-│       ├── batch_verifier.py # Fleet-scale verification
-│       └── hybrid_pqc.py    # Quantum resistance
-├── tests/                   # Automated Test Suite
-├── .gitignore
-├── requirements.txt
-└── *.md                     # Documentation & Analysis
+│   ├── client/          # Vehicle ECU implementation
+│   ├── crypto/          # ECC & Cryptographic primitives
+│   ├── security/        # E2E Encryption & DoS Protection
+│   ├── server/          # Backend FastAPI services
+│   ├── simulation/      # Fleet simulation logic
+│   └── uptane/          # Uptane metadata management
+├── tests/               # Integration & Unit tests
+├── Dockerfile           # Container definition
+├── docker-compose.yml   # Orchestration
+├── requirements.txt     # Python dependencies
+├── simulation.py        # Main simulation entry point
+└── README.md            # Documentation
 ```
 
 ---
 
-## 📜 Roadmap
-
--   [x] **Phase 1**: Cryptographic Foundation (ECC, Hybrid PQC, Batch verify)
--   [x] **Phase 2**: Security Layer (E2E Encryption, DoS Protection)
--   [x] **Phase 3**: Protocol Implementation (Uptane Metadata & Flows)
--   [x] **Phase 4**: Backend Services (Director & Image Repositories)
--   [x] **Phase 5**: Vehicle Client (Update Manager & ECU Simulation)
--   [x] **Phase 6**: Web Dashboard & Final Polish
-
----
-
-## 📄 License
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-*Developed as part of the SecureEV-OTA initiative to standardize post-quantum automotive security.*

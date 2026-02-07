@@ -29,12 +29,12 @@ class PrimaryECU:
     def __init__(self, 
                  vehicle_id: str, 
                  director_url: str, 
-                 unknown_image_repo_url: str,
+                 image_repo_url: str,
                  director_public_key_hex: str):
         
         self.vehicle_id = vehicle_id
         self.director_url = director_url.rstrip("/")
-        self.image_repo_url = unknown_image_repo_url.rstrip("/")
+        self.image_repo_url = image_repo_url.rstrip("/")
         
         # Crypto Engines
         self.ecc = ECCCore()
@@ -66,8 +66,9 @@ class PrimaryECU:
         """Register with the Director."""
         payload = {
             "vehicle_id": self.vehicle_id,
+            "ecu_id": f"PRIMARY-ECU-{self.vehicle_id[-6:]}",
             "public_key": self.keypair.get_public_key_bytes().hex(),
-            "hardware_id": "ecu-primary"
+            "hardware_id": "EV-MODEL-S"
         }
         
         async with httpx.AsyncClient() as client:
@@ -104,7 +105,8 @@ class PrimaryECU:
                 resp.raise_for_status()
                 targets_json = resp.text
             except httpx.HTTPError as e:
-                logger.error(f"Failed to check updates: {e}")
+                error_details = e.response.text if e.response else "No response body"
+                logger.error(f"Failed to check updates: {e} | Body: {error_details}")
                 return
 
             # 2. Verify Director's Response (The personalized Targets file)
@@ -133,9 +135,14 @@ class PrimaryECU:
         download_url = f"{self.image_repo_url}/targets/{filename}"
         params = {"vehicle_pub_key": self.keypair.get_public_key_bytes().hex()}
         
-        logger.info(f"Downloading {filename}...")
-        resp = await client.get(download_url, params=params)
-        resp.raise_for_status()
+        try:
+            logger.info(f"Downloading {filename}...")
+            resp = await client.get(download_url, params=params)
+            resp.raise_for_status()
+        except httpx.HTTPError as e:
+            error_details = e.response.text if e.response else "No response body"
+            logger.error(f"Download failed: {e} | Body: {error_details}")
+            raise UpdateError(f"Download failed: {e}")
         
         # 2. Handle Encryption
         try:

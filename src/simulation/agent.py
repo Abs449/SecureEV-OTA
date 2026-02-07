@@ -37,7 +37,7 @@ class VehicleAgent:
         self.ecu = PrimaryECU(
             vehicle_id=self.id,
             director_url=director_url,
-            unknown_image_repo_url=image_repo_url,
+            image_repo_url=image_repo_url,
             director_public_key_hex=director_pub_key
         )
 
@@ -50,6 +50,7 @@ class VehicleAgent:
             # 1. Registration Phase (jittered to avoid thundering herd)
             await asyncio.sleep(random.uniform(0.1, 2.0))
             await self.ecu.register()
+            logger.info(f"[{self.id}] Registered successfully via Director")
             self._report_status("REGISTERED")
             
             # 2. Polling Loop
@@ -59,14 +60,16 @@ class VehicleAgent:
                 
                 try:
                     self._report_status("POLLING")
+                    logger.info(f"[{self.id}] Polling for updates...")
                     await self.ecu.poll_for_updates()
+                    logger.info(f"[{self.id}] Update check complete - System up to date")
                     self._report_status("IDLE (Updated)")
                 except UpdateError as e:
                     self._report_status(f"ERROR: {str(e)}")
-                    logger.error(f"Agent {self.id} error: {e}")
+                    logger.error(f"[{self.id}] Update failed: {e}")
                 except Exception as e:
                     self._report_status(f"CRASH: {str(e)}")
-                    logger.exception(f"Agent {self.id} crashed")
+                    logger.exception(f"[{self.id}] Critical failure: {e}")
                     
         except asyncio.CancelledError:
             self._report_status("STOPPED")

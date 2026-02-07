@@ -1,0 +1,17 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.11, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\cabhi\OneDrive\Desktop\coding\SecureEV-OTA
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2 items
+
+tests\test_client.py ..                                                  [100%]
+
+============================== warnings summary ===============================
+tests/test_client.py::test_successful_update_flow
+tests/test_client.py::test_update_tampered_payload_hash_mismatch
+  C:\Users\cabhi\OneDrive\Desktop\coding\SecureEV-OTA\src\uptane\manager.py:80: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 2 passed, 2 warnings in 1.18s ========================

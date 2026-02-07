@@ -5,7 +5,7 @@ This module handles the loading, verification, and management of Uptane metadata
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 import logging
 
@@ -72,8 +72,14 @@ class MetadataManager:
             raise MetadataVerificationError(f"Expected role {role}, got {signed['_type']}")
 
         # 2. Check Expiry
-        expires = datetime.fromisoformat(signed["expires"])
-        if expires < datetime.now():
+        expires = datetime.fromisoformat(signed["expires"].replace("Z", "+00:00"))
+        # Ensure comparison is robust (aware vs naive)
+        if expires.tzinfo is not None:
+            now = datetime.now(timezone.utc)
+        else:
+            now = datetime.utcnow()
+            
+        if expires < now:
             raise MetadataVerificationError(f"Metadata expired on {expires}")
 
         # 3. Verify Signatures
