@@ -13,6 +13,22 @@
 
 **SecureEV-OTA** is a next-generation software framework designed to secure Over-the-Air (OTA) updates for Electric Vehicles (EVs). Building upon the industry-standard **Uptane** framework, it addresses critical security gaps by implementing **Hybrid Elliptic Curve Cryptography (ECC)**, mandatory end-to-end encryption, and post-quantum resistance.
 
+## 🚀 Quick Start (Docker)
+
+Get the full system running in 2 minutes:
+
+```bash
+# 1. Start the stack
+docker compose up --build -d
+
+# 2. View the Fleet Simulation Dashboard
+docker attach ota-simulation
+
+# (To detach without stopping: Press Ctrl+P, then Ctrl+Q)
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed cloud/local setup instructions.
+
 This project addresses 6 key weaknesses in the original Uptane reference implementation:
 1.  **Confidentiality**: End-to-End Encryption (ECDH + AES-256-GCM) ensures firmware privacy.
 2.  **DoS Resilience**: Adaptive multi-layer protection against attacks.
@@ -103,17 +119,11 @@ graph TB
 
 ### 🐳 Docker Deployment
 
-Run the entire stack (Director, Image Repo, and Simulation) with one command:
+See the **Quick Start** section above or [DEPLOYMENT.md](DEPLOYMENT.md) for full details.
 
+To restart the simulation if it stops:
 ```bash
-docker-compose up --build
-```
-
-You will see the fleet simulation dashboard running inside the `ota-simulation` container logs.
-
-To interact with the simulation specifically:
-```bash
-docker attach ota-simulation
+docker start -i ota-simulation
 ```
 
 ---
