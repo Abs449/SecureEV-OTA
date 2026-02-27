@@ -71,7 +71,7 @@ def verify_phase1_crypto(result: VerificationResult):
         return
     
     try:
-        is_valid = ecc.verify(keypair.public_key, message, signature.signature)
+        is_valid = ecc.verify(keypair.public_key, signature.signature, message)
         if is_valid:
             result.ok("ECDSA verification", "Signature verified")
         else:

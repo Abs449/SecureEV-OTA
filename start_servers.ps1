@@ -6,13 +6,13 @@ Write-Host "Starting SecureEV-OTA Backend Services..." -ForegroundColor Cyan
 # Create storage directory if it doesn't exist
 New-Item -ItemType Directory -Force -Path "repo_storage/images" | Out-Null
 
-# Start Director (Port 8000)
+# Start Director (Port 8000) with concurrency limits
 Write-Host "Starting Director Repository on port 8000..." -ForegroundColor Green
-$director = Start-Process -PassThru -NoNewWindow powershell -ArgumentList "-Command", "uvicorn src.server.director:app --host 0.0.0.0 --port 8000"
+$director = Start-Process -PassThru -NoNewWindow powershell -ArgumentList "-Command", "uvicorn src.server.director:app --host 0.0.0.0 --port 8000 --limit-concurrency 100 --limit-max-requests 1000"
 
-# Start Image Repo (Port 8001)
+# Start Image Repo (Port 8001) with concurrency limits
 Write-Host "Starting Image Repository on port 8001..." -ForegroundColor Green
-$imageRepo = Start-Process -PassThru -NoNewWindow powershell -ArgumentList "-Command", "uvicorn src.server.image_repo:app --host 0.0.0.0 --port 8001"
+$imageRepo = Start-Process -PassThru -NoNewWindow powershell -ArgumentList "-Command", "uvicorn src.server.image_repo:app --host 0.0.0.0 --port 8001 --limit-concurrency 100 --limit-max-requests 1000"
 
 Start-Sleep -Seconds 2
 

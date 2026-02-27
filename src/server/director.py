@@ -6,6 +6,7 @@ and generating custom, signed manifests for each vehicle.
 """
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 import time
@@ -24,7 +25,18 @@ app = FastAPI(title="SecureEV-OTA Director")
 
 # Core components
 ecc = ECCCore(ECCCurve.SECP256R1)
-dos = DoSProtection()
+
+# DoS Protection with higher limits for fleet simulation
+# Supports 5000+ vehicles with 50 requests/sec per vehicle
+dos = DoSProtection(
+    global_capacity=5000.0,
+    global_rate=500.0,
+    per_vehicle_capacity=500.0,
+    per_vehicle_rate=50.0,
+    max_vehicles=10000,
+    stale_timeout=3600,
+    blacklist_threshold=100  # Higher threshold for simulation
+)
 
 # Director's signing key (in a real app, this would be loaded from a secure KMS)
 # For the demo, we generate it on startup
@@ -69,7 +81,26 @@ async def register(reg: VehicleReg):
         "last_seen": time.time()
     }
     logger.info(f"Registered vehicle {reg.vehicle_id}")
+    # Reset any DoS counters/limiters for this vehicle on registration
+    try:
+        dos.reset_vehicle(reg.vehicle_id)
+    except Exception:
+        logger.debug("Failed to reset DoS counters for vehicle during registration")
     return {"status": "success", "message": f"Vehicle {reg.vehicle_id} registered"}
+
+@app.get("/vehicles")
+async def list_vehicles():
+    """
+    Debug endpoint: List all registered vehicles.
+    Only enabled when DEBUG_MODE environment variable is set.
+    Returns limited info (vehicle IDs and last_seen only) to avoid exposing sensitive data.
+    """
+    import os
+    debug_mode = os.getenv("DEBUG_MODE", "").lower() in ("1", "true", "yes")
+    if not debug_mode:
+        return {"error": "Debug endpoint disabled in production"}
+    # Return limited view - only vehicle IDs and last_seen timestamps
+    return {vid: {"last_seen": v.get("last_seen")} for vid, v in db.vehicles.items()}
 
 @app.get("/manifest/{vehicle_id}")
 async def get_manifest(vehicle_id: str):
@@ -79,8 +110,13 @@ async def get_manifest(vehicle_id: str):
     """
     # 1. Check DoS Protection
     if not dos.is_request_allowed(vehicle_id):
-        logger.warning(f"DoS protection triggered for {vehicle_id}")
-        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        retry_after = int(dos.get_retry_after(vehicle_id)) + 1  # Add 1 second buffer
+        logger.warning(f"DoS protection triggered for {vehicle_id}, retry after {retry_after}s")
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded", "reason": "Too many requests"},
+            headers={"Retry-After": str(retry_after)}
+        )
     
     # 2. Lookup vehicle
     if vehicle_id not in db.vehicles:
@@ -125,7 +161,11 @@ async def check_updates(vehicle_id: str = Query(...)):
     Returns signed targets metadata for a specific vehicle.
     """
     # Reuse get_manifest logic
-    return await get_manifest(vehicle_id)
+    resp = await get_manifest(vehicle_id)
+    # If get_manifest returned a JSONResponse due to rate limiting, forward it
+    if isinstance(resp, JSONResponse):
+        return resp
+    return resp
 
 if __name__ == "__main__":
     import uvicorn

@@ -25,7 +25,7 @@ class FleetManager:
         self.agent_tasks: List[asyncio.Task] = []
         
         # Stats: vehicle_id -> status_string
-        self.statuses: Dict[str, str] = {}
+        self.statuses: Dict[str, str] = {} 
         
     def spawn_agents(self, count: int):
         """Create N agents."""

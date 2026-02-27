@@ -6,6 +6,15 @@ for the SecureEV-OTA framework, implementing ECDSA for digital signatures
 and ECDH for key exchange.
 
 Based on improvements over the Uptane framework (USENIX 2016/2017).
+
+Security Notes:
+- SECP256R1 (NIST P-256): ~128-bit security, widely deployed (Apple, Google, etc.)
+- SECP384R1 (NIST P-384): ~192-bit security, government/financial use
+- SECP521R1 (NIST P-521): ~256-bit security, highest assurance
+- Ed25519: ~128-bit security, recommended for new deployments (pure Edwards curve)
+
+Key generation uses ec.generate_private_key() from the cryptography library,
+which already uses the OS CSPRNG for cryptographically secure randomness.
 """
 
 from __future__ import annotations
@@ -13,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import os
 import secrets
+import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
 from enum import Enum
@@ -25,10 +35,30 @@ from cryptography.exceptions import InvalidSignature
 
 
 class ECCCurve(Enum):
-    """Supported elliptic curves."""
-    SECP256R1 = "secp256r1"  # NIST P-256 (recommended for general use)
-    SECP384R1 = "secp384r1"  # NIST P-384 (higher security)
-    SECP521R1 = "secp521r1"  # NIST P-521 (highest security)
+    """
+    Supported elliptic curves with security levels.
+
+    Security Levels (approximate bits of security):
+    - SECP256R1: ~128 bits (P-256)
+    - SECP384R1: ~192 bits (P-384)
+    - SECP521R1: ~256 bits (P-521)
+
+    Note: SECP256R1 is the default for compatibility. For new deployments,
+    SECP384R1 or SECP521R1 provide higher security margins.
+    """
+    SECP256R1 = "secp256r1"  # NIST P-256 (128-bit security)
+    SECP384R1 = "secp384r1"  # NIST P-384 (192-bit security)
+    SECP521R1 = "secp521r1"  # NIST P-521 (256-bit security)
+    ED25519 = "ed25519"      # Ed25519 (128-bit security, pure Edwards curve)
+
+
+# Curve security information
+CURVE_SECURITY_LEVELS = {
+    ECCCurve.SECP256R1: {"name": "NIST P-256", "security_bits": 128, "key_size": 256},
+    ECCCurve.SECP384R1: {"name": "NIST P-384", "security_bits": 192, "key_size": 384},
+    ECCCurve.SECP521R1: {"name": "NIST P-521", "security_bits": 256, "key_size": 521},
+    ECCCurve.ED25519: {"name": "Ed25519", "security_bits": 128, "key_size": 256},
+}
 
 
 @dataclass
@@ -96,25 +126,79 @@ class ECCCore:
     """
     
     DEFAULT_CURVE = ECCCurve.SECP256R1
-    
+
+    # Recommended curves by security level
+    RECOMMENDED_CURVES = {
+        "high_security": ECCCurve.SECP521R1,  # 256-bit security
+        "standard": ECCCurve.SECP384R1,       # 192-bit security
+        "compatible": ECCCurve.SECP256R1,      # 128-bit security
+    }
+
     def __init__(self, curve: ECCCurve = DEFAULT_CURVE):
         """
         Initialize ECC core with specified curve.
-        
+
         Args:
             curve: Elliptic curve to use (default: secp256r1/P-256)
         """
         self.curve = curve
         self._curve_obj = self._get_curve_object(curve)
-    
+
+    @staticmethod
+    def get_curve_info(curve: ECCCurve) -> dict:
+        """
+        Get detailed information about a curve.
+
+        Args:
+            curve: The curve to query
+
+        Returns:
+            Dictionary with curve name, security bits, and key size
+
+        Raises:
+            ValueError: If curve is not found in CURVE_SECURITY_LEVELS
+        """
+        if curve not in CURVE_SECURITY_LEVELS:
+            raise ValueError(
+                f"Unknown curve: {curve.value}. "
+                f"Expected one of: {[c.value for c in CURVE_SECURITY_LEVELS.keys()]}. "
+                f"Curve info must include 'security_bits' and 'key_size'."
+            )
+        return CURVE_SECURITY_LEVELS[curve]
+
     @staticmethod
     def _get_curve_object(curve: ECCCurve) -> ec.EllipticCurve:
-        """Get cryptography library curve object."""
+        """
+        Get cryptography library curve object.
+
+        Args:
+            curve: The ECC curve enum
+
+        Returns:
+            Elliptic curve object for the cryptography library
+
+        Raises:
+            ValueError: If curve is not supported
+            NotImplementedError: If curve requires different handling (e.g., Ed25519)
+        """
+        # Handle Ed25519 specially - it requires asymmetric.ed25519 module
+        if curve == ECCCurve.ED25519:
+            raise NotImplementedError(
+                f"ECCCurve.ED25519 is not supported in _get_curve_object(). "
+                f"Ed25519 requires using cryptography.hazmat.primitives.asymmetric.ed25519 "
+                f"module directly. Support for Ed25519 is planned for a future release."
+            )
+
         curve_map = {
             ECCCurve.SECP256R1: ec.SECP256R1(),
             ECCCurve.SECP384R1: ec.SECP384R1(),
             ECCCurve.SECP521R1: ec.SECP521R1(),
         }
+
+        if curve not in curve_map:
+            raise ValueError(f"Unsupported curve: {curve.value}. "
+                           f"Supported curves: {list(curve_map.keys())}")
+
         return curve_map[curve]
     
     @staticmethod

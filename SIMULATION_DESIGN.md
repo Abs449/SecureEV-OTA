@@ -40,7 +40,7 @@ graph TD
         Director[Director Repo]
         Image[Image Repo]
     end
-
+    
     Manager -- Spawns/Controls --> V1
     Manager -- Spawns/Controls --> V2
     Manager -- Injects Faults --> V3

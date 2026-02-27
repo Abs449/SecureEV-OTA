@@ -36,6 +36,13 @@ file_handler.setFormatter(formatter)
 root_logger.addHandler(file_handler)
 
 console = Console()
+# Fix Unicode output on Windows
+if sys.platform == "win32":
+    try:
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 shutdown_event = asyncio.Event()
 
 async def check_services():
@@ -159,11 +166,9 @@ def generate_dashboard(manager: FleetManager) -> Layout:
     return layout
 
 async def main():
-    console.print("[bold cyan]╔══════════════════════════════════════╗[/bold cyan]")
-    console.print("[bold cyan]║   SecureEV-OTA Fleet Simulation      ║[/bold cyan]")
-    console.print("[bold cyan]╚══════════════════════════════════════╝[/bold cyan]")
+    console.print("[bold]SecureEV-OTA Fleet Simulation[/bold]")
     console.print()
-    
+
     # 1. Pre-flight checks
     console.print("[bold]Pre-flight Checks:[/bold]")
     if not await check_services():

@@ -6,7 +6,7 @@ metadata that describes them.
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import os
 import hashlib
 import logging
@@ -15,6 +15,7 @@ import json
 from src.crypto.ecc_core import ECCCore, ECCKeyPair, ECCCurve, public_key_from_bytes
 from src.uptane.metadata import TargetsMetadata
 from src.security.encryption import E2EEncryption
+from src.security.dos_protection import DoSProtection
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +26,18 @@ app = FastAPI(title="SecureEV-OTA Image Repository")
 # Core components
 ecc = ECCCore(ECCCurve.SECP256R1)
 IMAGE_REPO_KEY = ecc.generate_keypair()
+
+# DoS Protection with higher limits for fleet simulation
+# Same limits as Director to handle burst traffic
+dos = DoSProtection(
+    global_capacity=5000.0,
+    global_rate=500.0,
+    per_vehicle_capacity=500.0,
+    per_vehicle_rate=50.0,
+    max_vehicles=10000,
+    stale_timeout=3600,
+    blacklist_threshold=100  # Higher threshold for simulation
+)
 
 # Path configuration
 STORAGE_PATH = "repo_storage"
@@ -96,13 +109,27 @@ async def upload_image(filename: str, request: Request):
 e2e = E2EEncryption()
 
 @app.get("/targets/{filename}")
-async def get_encrypted_target(filename: str, vehicle_pub_key: str = Query(...)):
+async def get_encrypted_target(filename: str, vehicle_pub_key: str = Query(...), vehicle_id: str = Query(None)):
     """
     Serve firmware encrypted for the requesting vehicle.
-    
+
     The vehicle sends its public key, we generate an ephemeral keypair,
     derive a shared secret, and encrypt the firmware for only that vehicle.
     """
+    # Use only vehicle_pub_key for rate limiting to bind the bucket to the cryptographic identity
+    # This prevents attackers from bypassing rate limits by changing vehicle_id
+    rate_limit_id = vehicle_pub_key
+
+    # Check DoS Protection using cryptographic key-bound identifier
+    if not dos.is_request_allowed(rate_limit_id):
+        retry_after = int(dos.get_retry_after(rate_limit_id)) + 1
+        logger.warning(f"DoS protection triggered for vehicle_id={vehicle_id}, pubkey={vehicle_pub_key[:16]}..., retry after {retry_after}s")
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded", "reason": "Too many requests"},
+            headers={"Retry-After": str(retry_after)}
+        )
+
     filepath = os.path.join(IMAGES_PATH, filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Image not found")

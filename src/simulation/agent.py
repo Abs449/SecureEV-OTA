@@ -15,6 +15,7 @@ import uuid
 from typing import Callable, Optional
 
 from src.client.ecu import PrimaryECU, UpdateError
+import httpx
 
 logger = logging.getLogger("VehicleAgent")
 
@@ -45,18 +46,20 @@ class VehicleAgent:
         """Lifecycle loop."""
         self.running = True
         self._report_status("STARTING")
-        
+
         try:
-            # 1. Registration Phase (jittered to avoid thundering herd)
-            await asyncio.sleep(random.uniform(0.1, 2.0))
+            # 1. Registration Phase - Staggered to avoid thundering herd
+            # Use exponential distribution for better spread across time
+            await asyncio.sleep(random.expovariate(0.5))  # Mean 2 seconds, max ~10s
             await self.ecu.register()
             logger.info(f"[{self.id}] Registered successfully via Director")
             self._report_status("REGISTERED")
-            
+
             # 2. Polling Loop
             while self.running:
-                # Random poll interval (simulating 1-5 seconds for demo, normally hours)
-                await asyncio.sleep(random.uniform(1.0, 5.0))
+                # Random poll interval (simulating 1-10 seconds for demo, normally hours)
+                # Use uniform for more predictable spread
+                await asyncio.sleep(random.uniform(1.0, 10.0))
                 
                 try:
                     self._report_status("POLLING")
@@ -64,9 +67,21 @@ class VehicleAgent:
                     await self.ecu.poll_for_updates()
                     logger.info(f"[{self.id}] Update check complete - System up to date")
                     self._report_status("IDLE (Updated)")
+                except httpx.RequestError as e:
+                    # Transient network error — mark as network issue and backoff
+                    self._report_status(f"NETWORK_ERROR: {str(e)}")
+                    logger.warning(f"[{self.id}] Network error during update check: {e}")
+                    await asyncio.sleep(2.0)
                 except UpdateError as e:
-                    self._report_status(f"ERROR: {str(e)}")
-                    logger.error(f"[{self.id}] Update failed: {e}")
+                    # If the UpdateError contains a retry_after attribute, back off accordingly
+                    retry_after = getattr(e, "retry_after", None)
+                    if retry_after is not None:
+                        self._report_status(f"RATE_LIMITED: retry after {retry_after}s")
+                        logger.warning(f"[{self.id}] Rate limited, backing off for {retry_after}s")
+                        await asyncio.sleep(float(retry_after))
+                    else:
+                        self._report_status(f"ERROR: {str(e)}")
+                        logger.error(f"[{self.id}] Update failed: {e}")
                 except Exception as e:
                     self._report_status(f"CRASH: {str(e)}")
                     logger.exception(f"[{self.id}] Critical failure: {e}")
@@ -75,6 +90,8 @@ class VehicleAgent:
             self._report_status("STOPPED")
         finally:
             self.running = False
+            # Close HTTP client to release connections
+            await self.ecu.close()
 
     def stop(self):
         self.running = False
