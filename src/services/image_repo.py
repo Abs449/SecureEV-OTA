@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException, Response
 from typing import Dict, Any, Optional
 import json
 
-from src.security.encryption import E2EEncryption
+from src.security.e2e_encryption import E2EEncryption
 from src.uptane.metadata import RootMetadata, SnapshotMetadata, TimestampMetadata
 from src.crypto.ecc_core import ECCCore, ECCCurve
 
@@ -78,23 +78,23 @@ async def get_target(filename: str, vehicle_pub_key: Optional[str] = None):
                 ECCCurve.SECP256R1
             )
             
-            # 2. Generate Ephemeral Server Key
-            server_kp = e2e.ecdh.generate_ephemeral_keypair()
+            # 2. Ephemeral Key and Encryption
+            # Use high-level API which handles derivation
+            server_priv, server_pub = e2e.generate_ephemeral_keypair()
             
-            # 3. Derive Session Key
-            session_key = e2e.establish_session_key(server_kp.private_key, vehicle_key_obj)
+            # Legacy expected metadata in the envelope
+            metadata_dict = {"filename": filename}
             
-            # 4. Encrypt
-            package_bytes = e2e.package_encrypted_update(
-                data=data,
-                session_key=session_key,
-                metadata={"filename": filename}
+            package = e2e.encrypt(
+                plaintext=data,
+                our_private_key=server_priv,
+                peer_public_key=vehicle_key_obj,
+                additional_data=json.dumps(metadata_dict).encode()
             )
             
             # Return JSON envelope with encryption metadata
-            # We also need to send our ephemeral public key so vehicle can derive secret
-            response_data = json.loads(package_bytes)
-            response_data["server_ephemeral_key"] = server_kp.get_public_key_bytes().hex()
+            response_data = package.to_dict()
+            response_data["metadata"] = metadata_dict
             
             return response_data
             

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SecureEV-OTA is a production-ready, hybrid ECC-based security framework enhancing the Uptane standard for Electric Vehicles. It provides secure Over-the-Air (OTA) updates with mandatory end-to-end encryption, DoS protection, and quantum-resistant signatures.
+SecureEV-OTA is a production-ready, hybrid ECC-based security framework enhancing the Uptane standard for Electric Vehicles. It provides secure Over-the-Air (OTA) updates with mandatory end-to-end encryption, DoS protection, and ECC-based digital signatures (ECDSA) with classical security.
 
 ## Common Commands
 
@@ -80,7 +80,7 @@ The system implements a two-repository Uptane architecture:
 | **Director** | `src/server/director.py` | Vehicle registration, manifest generation (port 8000) |
 | **Image Repo** | `src/server/image_repo.py` | Encrypted firmware storage (port 8001) |
 | **Client** | `src/client/ecu.py` | Primary ECU implementation with verify/install |
-| **Fleet Simulation** | `src/simulation/manager.py` | 50+ concurrent vehicle simulation with Rich TUI |
+| **Fleet Simulation** | `src/simulation/manager.py` | 50 concurrent vehicle simulation (default VEHICLE_COUNT = 50, configurable) with Rich TUI |
 
 ### Data Flow
 

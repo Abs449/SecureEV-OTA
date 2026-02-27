@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 import time
 import json
 import logging
+import os
 
 from src.crypto.ecc_core import ECCCore, ECCKeyPair, ECCCurve
 from src.uptane.metadata import TargetsMetadata
@@ -84,8 +85,9 @@ async def register(reg: VehicleReg):
     # Reset any DoS counters/limiters for this vehicle on registration
     try:
         dos.reset_vehicle(reg.vehicle_id)
-    except Exception:
-        logger.debug("Failed to reset DoS counters for vehicle during registration")
+    except AttributeError as e:
+        logger.warning(f"Failed to reset DoS counters for vehicle {reg.vehicle_id} "
+                       f"(reset_vehicle): {e}")
     return {"status": "success", "message": f"Vehicle {reg.vehicle_id} registered"}
 
 @app.get("/vehicles")
@@ -95,10 +97,9 @@ async def list_vehicles():
     Only enabled when DEBUG_MODE environment variable is set.
     Returns limited info (vehicle IDs and last_seen only) to avoid exposing sensitive data.
     """
-    import os
     debug_mode = os.getenv("DEBUG_MODE", "").lower() in ("1", "true", "yes")
     if not debug_mode:
-        return {"error": "Debug endpoint disabled in production"}
+        raise HTTPException(status_code=403, detail="Debug endpoint disabled in production")
     # Return limited view - only vehicle IDs and last_seen timestamps
     return {vid: {"last_seen": v.get("last_seen")} for vid, v in db.vehicles.items()}
 
@@ -110,7 +111,19 @@ async def get_manifest(vehicle_id: str):
     """
     # 1. Check DoS Protection
     if not dos.is_request_allowed(vehicle_id):
-        retry_after = int(dos.get_retry_after(vehicle_id)) + 1  # Add 1 second buffer
+        # Defensively handle get_retry_after return value
+        try:
+            retry_value = dos.get_retry_after(vehicle_id)
+            if retry_value is None or not isinstance(retry_value, (int, float)):
+                logger.warning(f"get_retry_after returned non-numeric value for {vehicle_id}, "
+                               f"using default 1s")
+                retry_after = 2  # 1s default + 1s buffer
+            else:
+                retry_after = int(retry_value) + 1  # Add 1 second buffer
+        except (AttributeError, TypeError) as e:
+            logger.warning(f"Error calling get_retry_after for {vehicle_id}: {e}, "
+                           f"using default 1s")
+            retry_after = 2  # 1s default + 1s buffer
         logger.warning(f"DoS protection triggered for {vehicle_id}, retry after {retry_after}s")
         return JSONResponse(
             status_code=429,

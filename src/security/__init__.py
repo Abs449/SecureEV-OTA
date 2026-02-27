@@ -7,7 +7,7 @@ This module implements high-level security features including:
 - Formal protocol verification (models separately)
 """
 
-from src.security.encryption import E2EEncryption
+from src.security.e2e_encryption import E2EEncryption
 from src.security.dos_protection import DoSProtection, TokenBucket
 
 __all__ = ["E2EEncryption", "DoSProtection", "TokenBucket"]

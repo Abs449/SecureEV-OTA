@@ -35,7 +35,6 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 root_logger.addHandler(file_handler)
 
-console = Console()
 # Fix Unicode output on Windows
 if sys.platform == "win32":
     try:
@@ -43,6 +42,9 @@ if sys.platform == "win32":
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     except Exception:
         pass
+
+# Create Console after stdout wrapping so it picks up the wrapped stream
+console = Console()
 shutdown_event = asyncio.Event()
 
 async def check_services():

@@ -113,11 +113,12 @@ class TestImageRepository:
         # Vehicle key for E2E
         kp = ecc.generate_keypair()
         pub_hex = kp.get_public_key_bytes().hex()
-        
+
         response = image_repo_client.get(f"/targets/firmware_v2.0.bin?vehicle_pub_key={pub_hex}")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "ciphertext" in data
         assert "nonce" in data
-        assert "server_ephemeral_key" in data
+        assert "tag" in data
+        assert "sender_public_key" in data

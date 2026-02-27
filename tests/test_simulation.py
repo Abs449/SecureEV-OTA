@@ -24,6 +24,7 @@ async def test_agent_lifecycle(mock_ecu):
     instance = mock_ecu.return_value
     instance.register = AsyncMock()
     instance.poll_for_updates = AsyncMock()
+    instance.close = AsyncMock()
     
     # Callback to track status
     statuses = []
@@ -40,12 +41,9 @@ async def test_agent_lifecycle(mock_ecu):
     # Run agent in background task
     task = asyncio.create_task(agent.run())
     
-    # Let it run for a bit (it sleeps 0.1-2.0s for registration, then 1-5s for polling)
-    # We'll use asyncio.sleep(0) to yield execution but since we mock sleep, it's tricky.
-    # Instead, we rely on the fact that random.uniform is called.
-    
-    # To test quickly, we patch random.uniform to return tiny delay
-    with patch("random.uniform", return_value=0.01):
+    # To test quickly, we patch random to return tiny delays
+    with patch("random.uniform", return_value=0.01), \
+         patch("random.expovariate", return_value=0.01):
         # Allow cycle to run (real sleep yields to agent task)
         await asyncio.sleep(0.1)
         

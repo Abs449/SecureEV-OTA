@@ -210,27 +210,30 @@ class DoSProtection:
                 self._vehicle_limiters[vehicle_id] = bucket
                 self._vehicle_last_seen[vehicle_id] = time.time()
 
-            # Consume vehicle bucket first
+            # Check global rate limit first (before consuming per-vehicle token)
+            if not self.global_limiter.consume():
+                logger.warning(f"Global rate limit exceeded")
+                return False
+
+            # Consume vehicle bucket only after global check passes
             if not bucket.consume():
                 # Track violation for exponential backoff
                 violation_count = self._violation_counts.get(vehicle_id, 0) + 1
                 self._violation_counts[vehicle_id] = violation_count
 
-                # Compute exponential backoff duration
-                backoff_seconds = min(
-                    self.base_backoff * (2 ** (violation_count - 1)),
-                    self.max_backoff
-                )
-                self._block_expiry[vehicle_id] = time.time() + backoff_seconds
-                # Note: We rely solely on _block_expiry for temporary blocks, not _blacklist
-
-                logger.warning(f"Rate limit exceeded for {vehicle_id}, "
-                             f"violation #{violation_count}, blocking for {backoff_seconds:.1f}s")
-                return False
-
-            # Check global rate limit only after vehicle token is successfully consumed
-            if not self.global_limiter.consume():
-                logger.warning(f"Global rate limit exceeded")
+                # Only block (set backoff) on 2nd+ consecutive violation
+                if violation_count > 1:
+                    # Compute exponential backoff duration
+                    backoff_seconds = min(
+                        self.base_backoff * (2 ** (violation_count - 1)),
+                        self.max_backoff
+                    )
+                    self._block_expiry[vehicle_id] = time.time() + backoff_seconds
+                    logger.warning(f"Rate limit exceeded for {vehicle_id}, "
+                                 f"violation #{violation_count}, blocking for {backoff_seconds:.1f}s")
+                else:
+                    logger.warning(f"Rate limit exceeded for {vehicle_id} (first violation)")
+                
                 return False
 
             # Update last seen timestamp
@@ -312,7 +315,7 @@ class DoSProtection:
 
             # Reset vehicle limiter tokens
             if vehicle_id in self._vehicle_limiters:
-                self._vehicle_limiters[vehicle_id].refill()
+                self._vehicle_limiters[vehicle_id].reset_tokens()
 
             # Update last seen
             self._vehicle_last_seen[vehicle_id] = time.time()

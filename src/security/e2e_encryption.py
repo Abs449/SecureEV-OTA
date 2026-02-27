@@ -86,10 +86,11 @@ class EncryptedPackage:
     key_id: str
     algorithm: str
     sender_public_key: bytes  # Ephemeral public key for decryption
-    
+    metadata: Optional[Dict] = None  # Authenticated metadata (filename, size, etc.)
+
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
-        return {
+        result = {
             'ciphertext': self.ciphertext.hex(),
             'nonce': self.nonce.hex(),
             'tag': self.tag.hex(),
@@ -97,7 +98,10 @@ class EncryptedPackage:
             'algorithm': self.algorithm,
             'sender_public_key': self.sender_public_key.hex()
         }
-    
+        if self.metadata is not None:
+            result['metadata'] = self.metadata
+        return result
+
     @classmethod
     def from_dict(cls, data: dict) -> "EncryptedPackage":
         """Deserialize from dictionary."""
@@ -107,7 +111,8 @@ class EncryptedPackage:
             tag=bytes.fromhex(data['tag']),
             key_id=data['key_id'],
             algorithm=data['algorithm'],
-            sender_public_key=bytes.fromhex(data['sender_public_key'])
+            sender_public_key=bytes.fromhex(data['sender_public_key']),
+            metadata=data.get('metadata')
         )
     
     @property
@@ -431,7 +436,7 @@ class E2EEncryption:
         # Use deterministic absolute values (not min() which is non-idempotent)
         if lvl == ThreatLevel.LOW:
             self.session_duration = self.SESSION_DURATION
-            self._max_encryptions_per_key = 2**32
+            self._max_encryptions_per_key = self.DEFAULT_MAX_ENCRYPTIONS_PER_KEY
 
         elif lvl == ThreatLevel.MEDIUM:
             self.session_duration = max(300, int(self.SESSION_DURATION * 0.5))
@@ -444,6 +449,9 @@ class E2EEncryption:
         elif lvl == ThreatLevel.CRITICAL:
             self.session_duration = max(60, int(self.SESSION_DURATION * 0.1))
             self._max_encryptions_per_key = 1000
+
+        else:
+            raise ValueError(f"Unsupported ThreatLevel: {lvl}")
 
         logger.info(f"E2EEncryption adjusted for threat level: {lvl.name} (session_duration={self.session_duration}, max_encryptions={self._max_encryptions_per_key})")
     

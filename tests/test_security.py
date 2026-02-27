@@ -10,6 +10,7 @@ import pytest
 import json
 import time
 from src.security import E2EEncryption, DoSProtection
+from src.security.e2e_encryption import EncryptedPackage
 from src.crypto.ecc_core import ECDHKeyExchange, ECCCore
 
 
@@ -19,43 +20,49 @@ class TestE2EEncryption:
     def test_session_establishment(self):
         """Test derivation of matching session keys between two parties."""
         e2e = E2EEncryption()
-        ecdh = ECDHKeyExchange()
         
         # Parties generate ephemeral keys
-        alice_kp = ecdh.generate_ephemeral_keypair()
-        bob_kp = ecdh.generate_ephemeral_keypair()
+        alice_priv, alice_pub = e2e.generate_ephemeral_keypair()
+        bob_priv, bob_pub = e2e.generate_ephemeral_keypair()
         
         # Derive keys
-        alice_session = e2e.establish_session_key(alice_kp.private_key, bob_kp.public_key)
-        bob_session = e2e.establish_session_key(bob_kp.private_key, alice_kp.public_key)
+        alice_session = e2e.derive_session_key(alice_priv, bob_pub)
+        bob_session = e2e.derive_session_key(bob_priv, alice_pub)
         
-        assert alice_session == bob_session
-        assert len(alice_session) == 32
+        assert alice_session.key == bob_session.key
+        assert len(alice_session.key) == 32
 
     def test_encrypt_decrypt_payload(self):
         """Test basic encryption and decryption functionality."""
         e2e = E2EEncryption()
-        session_key = b"0" * 32
+        alice_priv, alice_pub = e2e.generate_ephemeral_keypair()
+        bob_priv, bob_pub = e2e.generate_ephemeral_keypair()
+        
         data = b"Secret firmware update payload"
         
-        nonce, ciphertext = e2e.encrypt_payload(data, session_key)
-        plaintext = e2e.decrypt_payload(ciphertext, nonce, session_key)
+        # Alice encrypts for Bob
+        package = e2e.encrypt(data, alice_priv, bob_pub)
+        
+        # Bob decrypts from Alice
+        plaintext = e2e.decrypt(package, bob_priv)
         
         assert plaintext == data
-        assert ciphertext != data
+        assert package.ciphertext != data
 
     def test_authenticated_metadata(self):
         """Test that associated metadata is authenticated but not encrypted."""
         e2e = E2EEncryption()
-        session_key = b"1" * 32
+        alice_priv, alice_pub = e2e.generate_ephemeral_keypair()
+        bob_priv, bob_pub = e2e.generate_ephemeral_keypair()
+        
         data = b"Firmware"
         metadata = {"version": "1.0", "ecu": "primary"}
-        
         assoc_data = json.dumps(metadata).encode()
-        nonce, ciphertext = e2e.encrypt_payload(data, session_key, assoc_data)
+        
+        package = e2e.encrypt(data, alice_priv, bob_pub, assoc_data)
         
         # Decryption with correct metadata should succeed
-        plaintext = e2e.decrypt_payload(ciphertext, nonce, session_key, assoc_data)
+        plaintext = e2e.decrypt(package, bob_priv, assoc_data)
         assert plaintext == data
         
         # Decryption with wrong/tampered metadata should fail
@@ -63,20 +70,22 @@ class TestE2EEncryption:
         wrong_assoc = json.dumps(wrong_metadata).encode()
         
         with pytest.raises(Exception):
-            e2e.decrypt_payload(ciphertext, nonce, session_key, wrong_assoc)
+            e2e.decrypt(package, bob_priv, wrong_assoc)
 
-    def test_package_and_unpack(self):
-        """Test the high-level packaging and unpacking logic."""
+    def test_package_serialization(self):
+        """Test the serialization of encrypted packages."""
         e2e = E2EEncryption()
-        session_key = b"2" * 32
+        alice_priv, alice_pub = e2e.generate_ephemeral_keypair()
+        bob_priv, bob_pub = e2e.generate_ephemeral_keypair()
+        
         data = b"Firmware Binary"
-        metadata = {"type": "critical", "checksum": "abc"}
+        package = e2e.encrypt(data, alice_priv, bob_pub)
         
-        package = e2e.package_encrypted_update(data, session_key, metadata)
-        decrypted_data, recovered_metadata = e2e.unpack_encrypted_update(package, session_key)
+        package_dict = package.to_dict()
+        recovered_package = EncryptedPackage.from_dict(package_dict)
         
+        decrypted_data = e2e.decrypt(recovered_package, bob_priv)
         assert decrypted_data == data
-        assert recovered_metadata == metadata
 
 
 class TestDoSProtection:

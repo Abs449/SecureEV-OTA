@@ -20,7 +20,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.crypto.ecc_core import ECCCore, ECCCurve
-from src.security.encryption import E2EEncryption
+from src.security.e2e_encryption import E2EEncryption
 from src.security.dos_protection import DoSProtection, TokenBucket
 from src.uptane.metadata import TargetsMetadata, RootMetadata
 
@@ -85,19 +85,18 @@ def verify_phase2_security(result: VerificationResult):
     print("\n🔒 Phase 2: Security Layer")
     
     try:
-        ecc = ECCCore()
         e2e = E2EEncryption()
         
-        # Server and client keypairs
-        server_kp = ecc.generate_keypair()
-        client_kp = ecc.generate_keypair()
+        # Server and client ephemeral keypairs
+        server_priv, server_pub = e2e.generate_ephemeral_keypair()
+        client_priv, client_pub = e2e.generate_ephemeral_keypair()
         
         # Derive session keys
-        server_session = e2e.establish_session_key(server_kp.private_key, client_kp.public_key)
-        client_session = e2e.establish_session_key(client_kp.private_key, server_kp.public_key)
+        server_session = e2e.derive_session_key(server_priv, client_pub)
+        client_session = e2e.derive_session_key(client_priv, server_pub)
         
-        if server_session == client_session:
-            result.ok("ECDH key exchange", f"Session key: {server_session[:8].hex()}...")
+        if server_session.key == client_session.key:
+            result.ok("ECDH key exchange", f"Session key: {server_session.key[:8].hex()}...")
         else:
             result.fail("ECDH key exchange", "Session keys don't match")
             return
@@ -107,11 +106,11 @@ def verify_phase2_security(result: VerificationResult):
     
     try:
         plaintext = b"Firmware update payload v2.1.0"
-        nonce, ciphertext = e2e.encrypt_payload(plaintext, server_session)
-        decrypted = e2e.decrypt_payload(ciphertext, nonce, client_session)
+        package = e2e.encrypt(plaintext, server_priv, client_pub)
+        decrypted = e2e.decrypt(package, client_priv)
         
         if decrypted == plaintext:
-            result.ok("AES-GCM encryption", f"Encrypted {len(plaintext)} -> {len(ciphertext)} bytes")
+            result.ok("AES-GCM encryption", f"Encrypted {len(plaintext)} -> {len(package.ciphertext)} bytes")
         else:
             result.fail("AES-GCM encryption", "Decryption mismatch")
     except Exception as e:

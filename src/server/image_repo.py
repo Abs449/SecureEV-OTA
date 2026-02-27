@@ -14,7 +14,7 @@ import json
 
 from src.crypto.ecc_core import ECCCore, ECCKeyPair, ECCCurve, public_key_from_bytes
 from src.uptane.metadata import TargetsMetadata
-from src.security.encryption import E2EEncryption
+from src.security.e2e_encryption import E2EEncryption
 from src.security.dos_protection import DoSProtection
 
 # Setup logging
@@ -144,31 +144,27 @@ async def get_encrypted_target(filename: str, vehicle_pub_key: str = Query(...),
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid public key: {e}")
     
-    # Generate ephemeral keypair for forward secrecy
-    ephemeral_keypair = ecc.generate_keypair()
-    
-    # Derive session key
-    session_key = e2e.establish_session_key(
-        ephemeral_keypair.private_key,
-        vehicle_pub
-    )
-    
-    # Encrypt firmware
+    # Encrypt firmware using the new high-level API
+    # It handles ephemeral key generation and derivation internally
     metadata = {"filename": filename, "size": len(firmware_data)}
-    nonce, ciphertext = e2e.encrypt_payload(
-        firmware_data, 
-        session_key, 
-        json.dumps(metadata).encode()
+    additional_data = json.dumps(metadata).encode()
+    
+    # generate_ephemeral_keypair returns (private, public)
+    server_priv, server_pub = e2e.generate_ephemeral_keypair()
+    
+    package = e2e.encrypt(
+        plaintext=firmware_data,
+        our_private_key=server_priv,
+        peer_public_key=vehicle_pub,
+        additional_data=additional_data
     )
     
-    logger.info(f"Encrypted {filename} for vehicle")
+    # For transport, we must include the metadata we authenticated
+    package.metadata = metadata
     
-    return {
-        "server_ephemeral_key": ephemeral_keypair.get_public_key_bytes().hex(),
-        "ciphertext": ciphertext.hex(),
-        "nonce": nonce.hex(),
-        "metadata": metadata
-    }
+    logger.info(f"Encrypted {filename} for vehicle using ephemeral key {server_pub.public_numbers().x:x}...")
+    
+    return package.to_dict()
 
 if __name__ == "__main__":
     import uvicorn

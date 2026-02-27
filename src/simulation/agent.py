@@ -49,8 +49,8 @@ class VehicleAgent:
 
         try:
             # 1. Registration Phase - Staggered to avoid thundering herd
-            # Use exponential distribution for better spread across time
-            await asyncio.sleep(random.expovariate(0.5))  # Mean 2 seconds, max ~10s
+            # Use exponential distribution (mean 2s) with hard cap at 10s
+            await asyncio.sleep(min(random.expovariate(0.5), 10.0))
             await self.ecu.register()
             logger.info(f"[{self.id}] Registered successfully via Director")
             self._report_status("REGISTERED")
@@ -76,9 +76,16 @@ class VehicleAgent:
                     # If the UpdateError contains a retry_after attribute, back off accordingly
                     retry_after = getattr(e, "retry_after", None)
                     if retry_after is not None:
-                        self._report_status(f"RATE_LIMITED: retry after {retry_after}s")
-                        logger.warning(f"[{self.id}] Rate limited, backing off for {retry_after}s")
-                        await asyncio.sleep(float(retry_after))
+                        try:
+                            retry_seconds = float(retry_after)
+                            self._report_status(f"RATE_LIMITED: retry after {retry_seconds}s")
+                            logger.warning(f"[{self.id}] Rate limited, backing off for {retry_seconds}s")
+                            await asyncio.sleep(retry_seconds)
+                        except (ValueError, TypeError):
+                            logger.warning(f"[{self.id}] Rate limited but retry_after "
+                                           f"'{retry_after}' is not numeric, using 5s default")
+                            self._report_status("RATE_LIMITED: retry after 5s (parse error)")
+                            await asyncio.sleep(5.0)
                     else:
                         self._report_status(f"ERROR: {str(e)}")
                         logger.error(f"[{self.id}] Update failed: {e}")

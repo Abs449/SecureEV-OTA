@@ -49,7 +49,7 @@ class ECCCurve(Enum):
     SECP256R1 = "secp256r1"  # NIST P-256 (128-bit security)
     SECP384R1 = "secp384r1"  # NIST P-384 (192-bit security)
     SECP521R1 = "secp521r1"  # NIST P-521 (256-bit security)
-    ED25519 = "ed25519"      # Ed25519 (128-bit security, pure Edwards curve)
+    ED25519 = "ed25519"      # Ed25519 (128-bit security, EXPERIMENTAL - not yet implemented)
 
 
 # Curve security information
@@ -57,7 +57,7 @@ CURVE_SECURITY_LEVELS = {
     ECCCurve.SECP256R1: {"name": "NIST P-256", "security_bits": 128, "key_size": 256},
     ECCCurve.SECP384R1: {"name": "NIST P-384", "security_bits": 192, "key_size": 384},
     ECCCurve.SECP521R1: {"name": "NIST P-521", "security_bits": 256, "key_size": 521},
-    ECCCurve.ED25519: {"name": "Ed25519", "security_bits": 128, "key_size": 256},
+    ECCCurve.ED25519: {"name": "Ed25519 (experimental)", "security_bits": 128, "key_size": 256},
 }
 
 

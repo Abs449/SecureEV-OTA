@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from src.crypto.ecc_core import ECCCore, ECCKeyPair, ECCCurve, public_key_from_bytes
 from src.uptane.manager import MetadataManager, MetadataVerificationError
-from src.security.encryption import E2EEncryption
+from src.security.e2e_encryption import E2EEncryption, EncryptedPackage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PrimaryECU")
@@ -31,7 +31,7 @@ DEFAULT_POOL_TIMEOUT = 10.0
 # Retry configuration for transient failures
 MAX_RETRIES = 3
 RETRY_BACKOFF_BASE = 0.5  # seconds
-RETRY_STATUSES = {408, 429, 500, 502, 503, 504}
+RETRY_STATUSES = {408, 500, 502, 503, 504}
 
 
 class UpdateError(Exception):
@@ -77,24 +77,26 @@ class PrimaryECU:
 
         # Shared HTTP client for connection pooling
         self._http_client: Optional[httpx.AsyncClient] = None
+        self._http_client_lock = asyncio.Lock()
 
-    def _get_http_client(self) -> httpx.AsyncClient:
-        """Get or create a shared HTTP client with proper timeouts."""
-        if self._http_client is None:
-            self._http_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(
-                    connect=self.connect_timeout,
-                    read=self.read_timeout,
-                    write=self.connect_timeout,
-                    pool=self.pool_timeout
-                ),
-                limits=httpx.Limits(
-                    max_connections=10,
-                    max_keepalive_connections=5
-                ),
-                follow_redirects=True
-            )
-        return self._http_client
+    async def _get_http_client(self) -> httpx.AsyncClient:
+        """Get or create a shared HTTP client with proper timeouts (thread-safe)."""
+        async with self._http_client_lock:
+            if self._http_client is None:
+                self._http_client = httpx.AsyncClient(
+                    timeout=httpx.Timeout(
+                        connect=self.connect_timeout,
+                        read=self.read_timeout,
+                        write=self.connect_timeout,
+                        pool=self.pool_timeout
+                    ),
+                    limits=httpx.Limits(
+                        max_connections=10,
+                        max_keepalive_connections=5
+                    ),
+                    follow_redirects=True
+                )
+            return self._http_client
 
     async def close(self):
         """Close the HTTP client."""
@@ -120,7 +122,7 @@ class PrimaryECU:
         Raises:
             UpdateError: If all retries fail
         """
-        client = self._get_http_client()
+        client = await self._get_http_client()
         last_exception = None
 
         for attempt in range(self.max_retries):
@@ -138,6 +140,9 @@ class PrimaryECU:
                     # Final attempt exhausted - raise UpdateError with status details
                     raise UpdateError(f"Request failed after {self.max_retries} attempts: "
                                       f"HTTP {response.status_code} - {response.text[:200]}")
+
+                # Successful or non-retryable response — return immediately
+                return response
 
             except (httpx.ConnectError, httpx.ConnectTimeout,
                     httpx.ReadTimeout, httpx.PoolTimeout) as e:
@@ -311,35 +316,20 @@ class PrimaryECU:
             logger.error(f"Update failed: {e}")
             raise
 
-    def _decrypt_package(self, package: Dict[str, Any]) -> bytes:
+    def _decrypt_package(self, package_dict: Dict[str, Any]) -> bytes:
         """Decrypt E2E package using our private key."""
         try:
-            server_pub_hex = package["server_ephemeral_key"]
-            ciphertext_hex = package["ciphertext"]
-            nonce_hex = package["nonce"]
+            # Convert dict to EncryptedPackage object
+            package = EncryptedPackage.from_dict(package_dict)
             
-            # Reconstruct objects
-            server_pub = public_key_from_bytes(
-                bytes.fromhex(server_pub_hex), 
-                ECCCurve.SECP256R1
-            )
-            
-            # Derive session key
-            session_key = self.e2e.establish_session_key(
-                self.keypair.private_key, 
-                server_pub
-            )
-            
-            # Decrypt
-            plaintext = self.e2e.decrypt_payload(
-                bytes.fromhex(ciphertext_hex),
-                bytes.fromhex(nonce_hex),
-                session_key,
+            # The library now handles derivation and decryption in one step
+            # using our private key and the sender's public key (in package)
+            return self.e2e.decrypt(
+                package=package,
+                our_private_key=self.keypair.private_key,
                 # Authenticated metadata (filename) if any was sent
-                json.dumps(package.get("metadata", {})).encode() if "metadata" in package else None
+                additional_data=json.dumps(package_dict.get("metadata", {})).encode() if "metadata" in package_dict else None
             )
-            
-            return plaintext
         except Exception as e:
             raise UpdateError(f"Decryption error: {type(e).__name__} {e}")
 
