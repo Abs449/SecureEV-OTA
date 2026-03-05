@@ -5,7 +5,7 @@ Based on the exact structure and implementation of the `SecureEV-OTA` project, t
 ## Architecture Diagram
 
 ```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'background': '#000000', 'primaryTextColor': '#ffffff', 'lineColor': '#ffffff', 'primaryColor': '#000000', 'primaryBorderColor': '#ffffff', 'clusterBkg': '#000000', 'clusterBorder': '#ffffff', 'textColor': '#ffffff'}}}%%
+%%{init: {'theme': 'default', 'themeVariables': { 'background': '#ffffff', 'primaryTextColor': '#000000', 'lineColor': '#000000', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'textColor': '#000000'}}}%%
 graph TB
     subgraph SimulationEnv ["Testing & Fleet Simulation (simulation.py)"]
         FleetManager["Fleet Manager<br>(src/simulation/manager.py)"]
@@ -66,31 +66,31 @@ graph TB
     ImageRepo -- "Encrypted Firmware Blob<br>over HTTP" --> PrimaryECU
     PrimaryECU -- "Register / Polling" --> DirectorRepo
 
-    %% Styling for Black Background and White Borders
-    style FleetManager fill:#000000,stroke:#ffffff,color:#ffffff
-    style Agent1 fill:#000000,stroke:#ffffff,color:#ffffff
-    style AgentN fill:#000000,stroke:#ffffff,color:#ffffff
-    style DirectorRepo fill:#000000,stroke:#ffffff,color:#ffffff
-    style ImageRepo fill:#000000,stroke:#ffffff,color:#ffffff
-    style DoS fill:#000000,stroke:#ffffff,color:#ffffff
-    style E2EServer fill:#000000,stroke:#ffffff,color:#ffffff
-    style PrimaryECU fill:#000000,stroke:#ffffff,color:#ffffff
-    style SecondaryECU fill:#000000,stroke:#ffffff,color:#ffffff
-    style UptaneClient fill:#000000,stroke:#ffffff,color:#ffffff
-    style CryptoCore fill:#000000,stroke:#ffffff,color:#ffffff
-    style E2EClient fill:#000000,stroke:#ffffff,color:#ffffff
-    style BaseECC fill:#000000,stroke:#ffffff,color:#ffffff
-    style Lightweight fill:#000000,stroke:#ffffff,color:#ffffff
-    style BatchVerifier fill:#000000,stroke:#ffffff,color:#ffffff
-    style HybridPQC fill:#000000,stroke:#ffffff,color:#ffffff
+    %% Styling for White Background and Black Borders
+    style FleetManager fill:#ffffff,stroke:#000000,color:#000000
+    style Agent1 fill:#ffffff,stroke:#000000,color:#000000
+    style AgentN fill:#ffffff,stroke:#000000,color:#000000
+    style DirectorRepo fill:#ffffff,stroke:#000000,color:#000000
+    style ImageRepo fill:#ffffff,stroke:#000000,color:#000000
+    style DoS fill:#ffffff,stroke:#000000,color:#000000
+    style E2EServer fill:#ffffff,stroke:#000000,color:#000000
+    style PrimaryECU fill:#ffffff,stroke:#000000,color:#000000
+    style SecondaryECU fill:#ffffff,stroke:#000000,color:#000000
+    style UptaneClient fill:#ffffff,stroke:#000000,color:#000000
+    style CryptoCore fill:#ffffff,stroke:#000000,color:#000000
+    style E2EClient fill:#ffffff,stroke:#000000,color:#000000
+    style BaseECC fill:#ffffff,stroke:#000000,color:#000000
+    style Lightweight fill:#ffffff,stroke:#000000,color:#000000
+    style BatchVerifier fill:#ffffff,stroke:#000000,color:#000000
+    style HybridPQC fill:#ffffff,stroke:#000000,color:#000000
 
-    style SimulationEnv fill:#0a0a0a,stroke:#ffffff,color:#ffffff
-    style OEMCloud fill:#0a0a0a,stroke:#ffffff,color:#ffffff
-    style EV fill:#0a0a0a,stroke:#ffffff,color:#ffffff
-    style CryptoModules fill:#0a0a0a,stroke:#ffffff,color:#ffffff
-    style SecurityLayer fill:#1a1a1a,stroke:#ffffff,color:#ffffff
-    style VirtualFleet fill:#1a1a1a,stroke:#ffffff,color:#ffffff
-    style ClientSecurity fill:#1a1a1a,stroke:#ffffff,color:#ffffff
+    style SimulationEnv fill:#f9f9f9,stroke:#000000,color:#000000
+    style OEMCloud fill:#f9f9f9,stroke:#000000,color:#000000
+    style EV fill:#f9f9f9,stroke:#000000,color:#000000
+    style CryptoModules fill:#f9f9f9,stroke:#000000,color:#000000
+    style SecurityLayer fill:#eeeeee,stroke:#000000,color:#000000
+    style VirtualFleet fill:#eeeeee,stroke:#000000,color:#000000
+    style ClientSecurity fill:#eeeeee,stroke:#000000,color:#000000
 ```
 
 ---
