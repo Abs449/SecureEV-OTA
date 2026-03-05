@@ -1,0 +1,84 @@
+%%{init: {'theme': 'default', 'themeVariables': { 'background': '#ffffff', 'primaryTextColor': '#000000', 'lineColor': '#000000', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'textColor': '#000000'}}}%%
+graph TB
+    subgraph SimulationEnv ["Testing and Fleet Simulation"]
+        FleetManager["Fleet Manager<br/>(simulation.py)"]
+        subgraph VirtualFleet ["Virtual Fleet"]
+            Agent1["Vehicle Agent 1"]
+            AgentN["Vehicle Agent N"]
+        end
+        FleetManager -- Spawns --> Agent1
+        FleetManager -- Spawns --> AgentN
+    end
+
+    subgraph OEMCloud ["OEM Cloud Backend"]
+        DirectorRepo["Director Repository<br/>Port 8000<br/>(Targeting and Metadata)"]
+        ImageRepo["Image Repository<br/>Port 8001<br/>(Encrypted Firmware)"]
+
+        subgraph SecurityLayer ["Security Layer"]
+            DoS["DoS Protection<br/>(Token Bucket)"]
+            E2EServer["E2E Encryption<br/>(AES-256-GCM + ECDH)"]
+        end
+
+        DirectorRepo --> DoS
+        ImageRepo --> E2EServer
+    end
+
+    subgraph EV ["Electric Vehicle"]
+        PrimaryECU["Primary ECU<br/>(ecu.py)"]
+        SecondaryECU["Secondary ECUs"]
+
+        subgraph ClientSecurity ["Client Components"]
+            UptaneClient["Uptane Client<br/>(Metadata Verification)"]
+            CryptoCore["Crypto Core<br/>(ECDSA/ECDH)"]
+            E2EClient["Decryption Engine<br/>(E2E Decrypt)"]
+        end
+
+        PrimaryECU --> UptaneClient
+        PrimaryECU --> E2EClient
+        UptaneClient --> CryptoCore
+        E2EClient --> CryptoCore
+
+        PrimaryECU --> SecondaryECU
+    end
+
+    subgraph CryptoModules ["Cryptographic Modules"]
+        BaseECC["ECC Core<br/>(ECDSA Signing)"]
+        Lightweight["Lightweight ECC<br/>(Montgomery Ladder)"]
+        BatchVerifier["Batch Verifier<br/>(KGLP)"]
+        HybridPQC["Hybrid PQC<br/>(ECDSA + ML-DSA)"]
+
+        BaseECC --- Lightweight
+        BaseECC --- BatchVerifier
+        BaseECC --- HybridPQC
+    end
+
+    Agent1 -.-> PrimaryECU
+
+    DirectorRepo -- "Signed Metadata" --> PrimaryECU
+    ImageRepo -- "Encrypted Firmware" --> PrimaryECU
+    PrimaryECU -- "Register / Poll" --> DirectorRepo
+
+    style FleetManager fill:#ffffff,stroke:#000000,stroke-width:2px
+    style Agent1 fill:#ffffff,stroke:#000000,stroke-width:1px
+    style AgentN fill:#ffffff,stroke:#000000,stroke-width:1px
+    style DirectorRepo fill:#e8f4fc,stroke:#000000,stroke-width:2px
+    style ImageRepo fill:#e8f4fc,stroke:#000000,stroke-width:2px
+    style DoS fill:#fff3e0,stroke:#000000,stroke-width:2px
+    style E2EServer fill:#fff3e0,stroke:#000000,stroke-width:2px
+    style PrimaryECU fill:#e8f8f0,stroke:#000000,stroke-width:2px
+    style SecondaryECU fill:#e8f8f0,stroke:#000000,stroke-width:1px
+    style UptaneClient fill:#f0e8f8,stroke:#000000,stroke-width:1px
+    style CryptoCore fill:#f0e8f8,stroke:#000000,stroke-width:1px
+    style E2EClient fill:#f0e8f8,stroke:#000000,stroke-width:1px
+    style BaseECC fill:#f8f0e8,stroke:#000000,stroke-width:1px
+    style Lightweight fill:#f8f0e8,stroke:#000000,stroke-width:1px
+    style BatchVerifier fill:#f8f0e8,stroke:#000000,stroke-width:1px
+    style HybridPQC fill:#f8f0e8,stroke:#000000,stroke-width:1px
+
+    style SimulationEnv fill:#f5f5f5,stroke:#000000,stroke-width:2px
+    style OEMCloud fill:#f5f5f5,stroke:#000000,stroke-width:2px
+    style EV fill:#f5f5f5,stroke:#000000,stroke-width:2px
+    style CryptoModules fill:#f5f5f5,stroke:#000000,stroke-width:2px
+    style SecurityLayer fill:#fafafa,stroke:#000000,stroke-width:1px
+    style VirtualFleet fill:#fafafa,stroke:#000000,stroke-width:1px
+    style ClientSecurity fill:#fafafa,stroke:#000000,stroke-width:1px

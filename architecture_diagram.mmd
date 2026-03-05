@@ -1,0 +1,86 @@
+%%{init: {'theme': 'default', 'themeVariables': { 'background': '#ffffff', 'primaryTextColor': '#000000', 'lineColor': '#000000', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'textColor': '#000000'}}}%%
+graph TB
+    subgraph SimulationEnv ["Testing & Fleet Simulation (simulation.py)"]
+        FleetManager["Fleet Manager<br>(src/simulation/manager.py)"]
+        subgraph VirtualFleet ["Virtual Fleet"]
+            Agent1["Vehicle Agent 1"]
+            AgentN["Vehicle Agent N"]
+        end
+        FleetManager -- Spawns/Controls --> Agent1
+        FleetManager -- Spawns/Controls --> AgentN
+    end
+
+    subgraph OEMCloud ["OEM Cloud Backend (src/server)"]
+        DirectorRepo["Director Repository<br>(Targeting & Metadata)<br>Port 8000"]
+        ImageRepo["Image Repository<br>(Encrypted Firmware)<br>Port 8001"]
+
+        subgraph SecurityLayer ["Security / DoS Layer (src/security)"]
+            DoS["DoS Protection<br>(Token Bucket Rate Limiting)"]
+            E2EServer["End-to-End Encryption<br>(AES-256-GCM + ECDH)"]
+        end
+
+        DirectorRepo -->|Uses| DoS
+        ImageRepo -->|Uses| E2EServer
+    end
+
+    subgraph EV ["Electric Vehicle Client (src/client)"]
+        PrimaryECU["Primary ECU<br>(src/client/ecu.py)"]
+        SecondaryECU["Secondary ECUs"]
+
+        subgraph ClientSecurity ["Client Protocol & Crypto"]
+            UptaneClient["Uptane Client Module<br>(src/uptane)"]
+            CryptoCore["Crypto Core<br>(src/crypto)"]
+            E2EClient["Decryption Engine<br>(src/security)"]
+        end
+
+        PrimaryECU -->|Verifies Metadata| UptaneClient
+        PrimaryECU -->|Decrypts| E2EClient
+        UptaneClient -->|Signature Verification| CryptoCore
+        E2EClient -->|AES/ECDH| CryptoCore
+
+        PrimaryECU -->|Distributes Update| SecondaryECU
+    end
+
+    subgraph CryptoModules ["Crypto Module Details (src/crypto)"]
+        BaseECC["ECC Core<br>(ECDSA/ECDH)"]
+        Lightweight["Lightweight ECC<br>(Montgomery Ladder)"]
+        BatchVerifier["Batch Verifier<br>(KGLP Algorithm)"]
+        HybridPQC["Hybrid PQC<br>(ECDSA + ML-DSA)"]
+
+        BaseECC --- Lightweight
+        BaseECC --- BatchVerifier
+        BaseECC --- HybridPQC
+    end
+
+    %% Network Connections
+    Agent1 -. Wraps .-> PrimaryECU
+
+    DirectorRepo -- "Signed Metadata (JSON)<br>over HTTP" --> PrimaryECU
+    ImageRepo -- "Encrypted Firmware Blob<br>over HTTP" --> PrimaryECU
+    PrimaryECU -- "Register / Polling" --> DirectorRepo
+
+    %% Styling for White Background and Black Borders
+    style FleetManager fill:#ffffff,stroke:#000000,color:#000000
+    style Agent1 fill:#ffffff,stroke:#000000,color:#000000
+    style AgentN fill:#ffffff,stroke:#000000,color:#000000
+    style DirectorRepo fill:#ffffff,stroke:#000000,color:#000000
+    style ImageRepo fill:#ffffff,stroke:#000000,color:#000000
+    style DoS fill:#ffffff,stroke:#000000,color:#000000
+    style E2EServer fill:#ffffff,stroke:#000000,color:#000000
+    style PrimaryECU fill:#ffffff,stroke:#000000,color:#000000
+    style SecondaryECU fill:#ffffff,stroke:#000000,color:#000000
+    style UptaneClient fill:#ffffff,stroke:#000000,color:#000000
+    style CryptoCore fill:#ffffff,stroke:#000000,color:#000000
+    style E2EClient fill:#ffffff,stroke:#000000,color:#000000
+    style BaseECC fill:#ffffff,stroke:#000000,color:#000000
+    style Lightweight fill:#ffffff,stroke:#000000,color:#000000
+    style BatchVerifier fill:#ffffff,stroke:#000000,color:#000000
+    style HybridPQC fill:#ffffff,stroke:#000000,color:#000000
+
+    style SimulationEnv fill:#f9f9f9,stroke:#000000,color:#000000
+    style OEMCloud fill:#f9f9f9,stroke:#000000,color:#000000
+    style EV fill:#f9f9f9,stroke:#000000,color:#000000
+    style CryptoModules fill:#f9f9f9,stroke:#000000,color:#000000
+    style SecurityLayer fill:#eeeeee,stroke:#000000,color:#000000
+    style VirtualFleet fill:#eeeeee,stroke:#000000,color:#000000
+    style ClientSecurity fill:#eeeeee,stroke:#000000,color:#000000

@@ -86,11 +86,10 @@ class EncryptedPackage:
     key_id: str
     algorithm: str
     sender_public_key: bytes  # Ephemeral public key for decryption
-    metadata: Optional[Dict] = None  # Authenticated metadata (filename, size, etc.)
-
+    
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
-        result = {
+        return {
             'ciphertext': self.ciphertext.hex(),
             'nonce': self.nonce.hex(),
             'tag': self.tag.hex(),
@@ -98,10 +97,7 @@ class EncryptedPackage:
             'algorithm': self.algorithm,
             'sender_public_key': self.sender_public_key.hex()
         }
-        if self.metadata is not None:
-            result['metadata'] = self.metadata
-        return result
-
+    
     @classmethod
     def from_dict(cls, data: dict) -> "EncryptedPackage":
         """Deserialize from dictionary."""
@@ -111,8 +107,7 @@ class EncryptedPackage:
             tag=bytes.fromhex(data['tag']),
             key_id=data['key_id'],
             algorithm=data['algorithm'],
-            sender_public_key=bytes.fromhex(data['sender_public_key']),
-            metadata=data.get('metadata')
+            sender_public_key=bytes.fromhex(data['sender_public_key'])
         )
     
     @property
@@ -167,16 +162,14 @@ class E2EEncryption:
     GCM_NONCE_SIZE = 12    # 96 bits (recommended for GCM)
     GCM_TAG_SIZE = 16      # 128 bits
     SESSION_DURATION = 3600  # 1 hour default
-
-    # Per-instance limit (will be set in __init__)
-    DEFAULT_MAX_ENCRYPTIONS_PER_KEY = 2**32  # GCM limit
-
-    def __init__(self,
+    MAX_ENCRYPTIONS_PER_KEY = 2**32  # GCM limit
+    
+    def __init__(self, 
                  mode: EncryptionMode = EncryptionMode.AES_256_GCM,
                  session_duration: int = SESSION_DURATION):
         """
         Initialize E2E encryption.
-
+        
         Args:
             mode: Encryption algorithm mode
             session_duration: Session key validity in seconds
@@ -186,8 +179,7 @@ class E2EEncryption:
         self._session_keys: Dict[str, SessionKey] = {}
         self._nonce_history: Dict[str, set] = {}  # Prevent nonce reuse
         self._encryption_counter: Dict[str, int] = {}
-        self._max_encryptions_per_key = self.DEFAULT_MAX_ENCRYPTIONS_PER_KEY
-
+        
         logger.info(f"E2EEncryption initialized with mode={mode.value}")
     
     def generate_ephemeral_keypair(self) -> Tuple[ec.EllipticCurvePrivateKey, 
@@ -285,7 +277,7 @@ class E2EEncryption:
             session_key = self.derive_session_key(our_private_key, peer_public_key)
             
             # Check encryption limit
-            if self._encryption_counter[session_key.key_id] >= self._max_encryptions_per_key:
+            if self._encryption_counter[session_key.key_id] >= self.MAX_ENCRYPTIONS_PER_KEY:
                 raise EncryptionError("Session key encryption limit reached")
             
             # Generate unique nonce
@@ -406,54 +398,6 @@ class E2EEncryption:
                 return nonce
         
         raise EncryptionError("Failed to generate unique nonce")
-
-    def adjust_for_threat_level(self, level) -> None:
-        """
-        Adjust encryption parameters based on `ThreatLevel`.
-
-        Shortens session durations and lowers per-key usage limits during
-        elevated threat levels to reduce exposure.
-        """
-        try:
-            from src.security.threat_levels import ThreatLevel
-        except Exception:
-            ThreatLevel = None
-
-        # Resolve level to ThreatLevel if possible
-        lvl = None
-        if ThreatLevel is not None and isinstance(level, ThreatLevel):
-            lvl = level
-        else:
-            try:
-                lvl = ThreatLevel(str(level)) if ThreatLevel is not None else None
-            except Exception:
-                lvl = None
-
-        if lvl is None:
-            logger.debug("Unknown threat level for E2EEncryption; no adjustment")
-            return
-
-        # Use deterministic absolute values (not min() which is non-idempotent)
-        if lvl == ThreatLevel.LOW:
-            self.session_duration = self.SESSION_DURATION
-            self._max_encryptions_per_key = self.DEFAULT_MAX_ENCRYPTIONS_PER_KEY
-
-        elif lvl == ThreatLevel.MEDIUM:
-            self.session_duration = max(300, int(self.SESSION_DURATION * 0.5))
-            self._max_encryptions_per_key = 100000
-
-        elif lvl == ThreatLevel.HIGH:
-            self.session_duration = max(120, int(self.SESSION_DURATION * 0.2))
-            self._max_encryptions_per_key = 10000
-
-        elif lvl == ThreatLevel.CRITICAL:
-            self.session_duration = max(60, int(self.SESSION_DURATION * 0.1))
-            self._max_encryptions_per_key = 1000
-
-        else:
-            raise ValueError(f"Unsupported ThreatLevel: {lvl}")
-
-        logger.info(f"E2EEncryption adjusted for threat level: {lvl.name} (session_duration={self.session_duration}, max_encryptions={self._max_encryptions_per_key})")
     
     def rotate_session_key(self, old_key_id: str) -> None:
         """
