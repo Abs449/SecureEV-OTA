@@ -203,9 +203,19 @@ async def main():
         with Live(generate_dashboard(manager), refresh_per_second=2, console=console) as live:
             while not shutdown_event.is_set():
                 try:
+                    stats = manager.get_stats()
                     live.update(generate_dashboard(manager))
+                    
+                    # Auto-shutdown once all vehicles are updated
+                    updated_count = stats.get("IDLE (Updated)", 0)
+                    if updated_count >= VEHICLE_COUNT:
+                        console.print(f"\n[bold green]Success![/bold green] All {VEHICLE_COUNT} vehicles have been successfully updated via E2E encryption.")
+                        console.print("[yellow]Auto-terminating simulation...[/yellow]")
+                        shutdown_event.set()
+                        break
+                        
                     await asyncio.sleep(0.5)
-                except Exception as e:
+                except Exception:
                     # Dashboard error shouldn't stop simulation
                     pass
                     
