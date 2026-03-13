@@ -1,15 +1,20 @@
-Write-Host "Starting SecureEV-OTA Demo..."
+# SecureEV-OTA Demo Launcher
+Write-Host "Starting SecureEV-OTA Demo..." -ForegroundColor Cyan
 Write-Host "--------------------------------"
-$VENV_PYTHON = ".\.venv\Scripts\python.exe"
 
-Write-Host "1. Launching Director Service (Port 8000)..."
-Start-Process $VENV_PYTHON -ArgumentList "-m uvicorn src.services.director:app --port 8000" -WindowStyle Minimized
+# Load Python Discovery Utility
+. .\get_python.ps1
+$VENV_PYTHON = Get-PythonPath
+Write-Host "Using Python: $VENV_PYTHON" -ForegroundColor Gray
 
-Write-Host "2. Launching Image Repository (Port 8001)..."
-Start-Process $VENV_PYTHON -ArgumentList "-m uvicorn src.services.image_repo:app --port 8001" -WindowStyle Minimized
+Write-Host "1. Launching Director Service (Port 8000)..." -ForegroundColor Green
+Start-Process $VENV_PYTHON -ArgumentList "-m uvicorn src.server.director:app --port 8000" -WindowStyle Minimized
 
-Write-Host "Waiting 5 seconds for services to initialize..."
+Write-Host "2. Launching Image Repository (Port 8001)..." -ForegroundColor Green
+Start-Process $VENV_PYTHON -ArgumentList "-m uvicorn src.server.image_repo:app --port 8001" -WindowStyle Minimized
+
+Write-Host "Waiting 5 seconds for services to initialize..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
 
-Write-Host "3. Launching Fleet Simulation..."
+Write-Host "3. Launching Fleet Simulation..." -ForegroundColor Cyan
 & $VENV_PYTHON simulation.py
