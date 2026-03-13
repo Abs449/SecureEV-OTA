@@ -86,6 +86,7 @@ class EncryptedPackage:
     key_id: str
     algorithm: str
     sender_public_key: bytes  # Ephemeral public key for decryption
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
@@ -95,7 +96,8 @@ class EncryptedPackage:
             'tag': self.tag.hex(),
             'key_id': self.key_id,
             'algorithm': self.algorithm,
-            'sender_public_key': self.sender_public_key.hex()
+            'sender_public_key': self.sender_public_key.hex(),
+            'metadata': self.metadata
         }
     
     @classmethod
@@ -107,7 +109,8 @@ class EncryptedPackage:
             tag=bytes.fromhex(data['tag']),
             key_id=data['key_id'],
             algorithm=data['algorithm'],
-            sender_public_key=bytes.fromhex(data['sender_public_key'])
+            sender_public_key=bytes.fromhex(data['sender_public_key']),
+            metadata=data.get('metadata', {})
         )
     
     @property
