@@ -103,7 +103,7 @@ graph TB
 
 3.  **Start Backend Services:**
     ```bash
-    # Windows PowerShell
+    # Windows PowerShell (Recommended - auto-discovers Python environment)
     ./start_servers.ps1
     ```
     *Or manually:*
@@ -112,8 +112,12 @@ graph TB
     uvicorn src.server.image_repo:app --port 8001
     ```
 
-4.  **Run Verification:**
+4.  **Run Tests & Verification:**
     ```bash
+    # Run integration test suite using the robust test runner
+    ./run_tests.ps1
+
+    # Run the full end-to-end verification script
     python tests/verify_all.py
     ```
 
@@ -138,8 +142,13 @@ The project includes a massive fleet simulation (`simulation.py`) that demonstra
 
 **Run Simulation Locally:**
 ```bash
+# Windows PowerShell (Recommended)
+./run_demo.ps1
+
+# Or manually:
 python simulation.py
 ```
+*(Note: The simulation features auto-termination, gracefully exiting once all vehicles have been successfully updated.)*
 
 ---
 
@@ -174,8 +183,12 @@ SecureEV-OTA/
 ├── tests/               # Integration & Unit tests
 ├── Dockerfile           # Container definition
 ├── docker-compose.yml   # Orchestration
+├── get_python.ps1       # Dynamic Python environment discovery
 ├── requirements.txt     # Python dependencies
+├── run_demo.ps1         # Full fleet simulation launcher
+├── run_tests.ps1        # Robust integration test runner
 ├── simulation.py        # Main simulation entry point
+├── start_servers.ps1    # Backend services launcher
 └── README.md            # Documentation
 ```
 
