@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
